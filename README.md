@@ -12,11 +12,11 @@ Enterprise_Boundary(b1, "workspace", "includes all packages") {
     System(SystemB, "x_sec_navigation", "Node")
   }
 
-  System_Boundary(b3, "duckiebot_pkg", "boundary") {
-    System(SystemC, "camera/compressed_img", "std_msgs.msg/compressed")
+  System_Boundary(b3, "duckie_pkg", "Package") {
+    System(SystemC, "camera_node", "Node")
   }
 }
 
-Rel(SystemC, SystemA, "compressed img")
-Rel(SystemA, SystemB, "red lane information")
+Rel(SystemC, SystemA, "topic/../image/compressed" ,"sensor_msgs.msg/CompressedImage")
+Rel(SystemA, SystemB, "topic/../mask_red_lines/compressed", "sensor_msgs.msg/CompressedImage")
 ```
