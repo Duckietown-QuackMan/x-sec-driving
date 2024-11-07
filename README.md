@@ -19,10 +19,9 @@ Enterprise_Boundary(b1, "workspace") {
 
 Rel(SystemC, SystemA, "compressed img")
 Rel(SystemA, SystemB, "red lane information")
+````
 
-
-
-%% C4 Level 1: System Context Diagram
+```%% C4 Level 1: System Context Diagram
 flowchart TB
   %% Users and external systems
   user(User) -->|Interacts| sys(System)
@@ -37,8 +36,8 @@ flowchart TB
 
   classDef systemClass fill:#9cf,stroke:#333,stroke-width:2px;
   class sys systemClass;
-
-%% C4 Level 2: Container Diagram
+```
+```%% C4 Level 2: Container Diagram
 flowchart TB
   user(User) --> web[Web Application]
   user --> mob[Mobile App]
