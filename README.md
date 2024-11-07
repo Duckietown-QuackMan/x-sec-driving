@@ -7,8 +7,8 @@ title Cross Section Driving Package
 
 Enterprise_Boundary(b1, "workspace", "includes all packages") {
 
-  System_Boundary(b2, "x-sec-driving_pkg", "Package") {
-    System(SystemA, "x_sex_detection", "Node")
+  Package_Boundary(b2, "x-sec-driving_pkg", "Package") {
+    Node(SystemA, "x_sex_detection", "Node")
     System(SystemB, "x_sec_navigation", "Node")
   }
 
