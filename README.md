@@ -19,4 +19,37 @@ Enterprise_Boundary(b1, "workspace") {
 
 Rel(SystemC, SystemA, "compressed img")
 Rel(SystemA, SystemB, "red lane information")
+
+
+
+%% C4 Level 1: System Context Diagram
+flowchart TB
+  %% Users and external systems
+  user(User) -->|Interacts| sys(System)
+  ext(External System) -->|Uses| sys
+
+  %% Main system
+  sys(System) -->|Sends data to| db[(Database)]
+
+  %% Labels and style
+  classDef userClass fill:#f96,stroke:#333,stroke-width:2px;
+  class user,ext userClass;
+
+  classDef systemClass fill:#9cf,stroke:#333,stroke-width:2px;
+  class sys systemClass;
+
+%% C4 Level 2: Container Diagram
+flowchart TB
+  user(User) --> web[Web Application]
+  user --> mob[Mobile App]
+  web -->|Reads/Writes| db[(Database)]
+  mob --> api[API Server]
+  api --> db
+
+  %% Styles
+  classDef app fill:#bbf,stroke:#333,stroke-width:2px;
+  classDef dbStyle fill:#f99,stroke:#333,stroke-width:2px;
+  class user userClass;
+  class web,mob,api app;
+  class db dbStyle;
 ```
