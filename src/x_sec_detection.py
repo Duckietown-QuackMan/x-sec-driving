@@ -14,19 +14,27 @@ except ModuleNotFoundError:
 
 from sensor_msgs.msg import CompressedImage
 
-from XsecDetector import XsecDetector
-#test
+from XsecDetector import (
+    line_detection,
+    plot_lines,
+    XSecTile,
+    evaluate
+    )
+
 
 class XsecDetection:
 
     def __init__(self):
 
+        
+        self.callback_rate = 25
+        self.cnt = 0
+        
         self.received_first_input_msg_image = False
         if CV_BRIDGE_AVAILABLE:
             self.cv_bridge = CvBridge()
         self.setup_params()
         self.setup_publishers_and_subscribers()
-        self.xsec_detector = XsecDetector()
 
     def print_info(self) -> None:
 
@@ -67,6 +75,7 @@ class XsecDetection:
         self.name_pub_image_red_lines_mask_topic = get_rosparam(
             "~topics/pub/red_lines_mask"
         )
+        self.name_pub_image_xsec_eval_topic = get_rosparam("~topics/pub/xsec_eval")
 
 
     def setup_publishers_and_subscribers(self) -> None:
@@ -83,6 +92,12 @@ class XsecDetection:
 
         self.pub_image_red_lines_mask = rospy.Publisher(
             self.name_pub_image_red_lines_mask_topic,
+            CompressedImage,
+            queue_size=10,
+        )
+        
+        self.pub_image_red_xsec_eval = rospy.Publisher(
+            self.name_pub_image_xsec_eval_topic,
             CompressedImage,
             queue_size=10,
         )
@@ -112,7 +127,7 @@ class XsecDetection:
 
     def publish_line_masks(
         self,
-        red_lines_mask: NDArray[np.bool_],
+        image: NDArray[np.uint8], #np.red_lines_mask: NDArray[np.bool_],
         input_msg_stamp: rospy.Time,
     ) -> None:
         """
@@ -127,18 +142,44 @@ class XsecDetection:
 
         if CV_BRIDGE_AVAILABLE:
             red_lines_mask_msg = self.cv_bridge.cv2_to_compressed_imgmsg(
-                255 * red_lines_mask.astype(np.uint8), dst_format="png"
+                255 * image.astype(np.uint8), dst_format="png"
             )
         else:
             red_lines_mask_msg = CompressedImage()
             red_lines_mask_msg.format = "png"
             ext_format = '.' + red_lines_mask_msg.format
             red_lines_mask_msg.data = np.array(
-                cv2.imencode(ext_format, 255 * red_lines_mask.astype(np.uint8))[1]
+                cv2.imencode(ext_format, 255 * image.astype(np.uint8))[1]
             ).tobytes()
         red_lines_mask_msg.header.stamp = input_msg_stamp
 
         self.pub_image_red_lines_mask.publish(red_lines_mask_msg)
+        
+    def publish_xsec_eval(
+            self,
+            image: NDArray[np.uint8], #np.red_lines_mask: NDArray[np.bool_],
+            input_msg_stamp: rospy.Time,
+        ) -> None:
+        """
+
+        Args:
+            evalutation (NDArray[np.bool_])
+        """
+
+        if CV_BRIDGE_AVAILABLE:
+            xsec_eval_msg = self.cv_bridge.cv2_to_compressed_imgmsg(
+                255 * image.astype(np.uint8), dst_format="png"
+            )
+        else:
+            xsec_eval_msg = CompressedImage()
+            xsec_eval_msg.format = "png"
+            ext_format = '.' + xsec_eval_msg.format
+            xsec_eval_msg.data = np.array(
+                cv2.imencode(ext_format, 255 * image.astype(np.uint8))[1]
+            ).tobytes()
+        xsec_eval_msg.header.stamp = input_msg_stamp
+
+        self.pub_image_red_xsec_eval.publish(xsec_eval_msg)
 
     def xsec_detection_callback(self, msg: CompressedImage) -> None:
         """
@@ -150,19 +191,30 @@ class XsecDetection:
             msg (CompressedImage): input image message
         """
 
+        self.cnt += 1
         self.received_first_input_msg_image = True
 
-        input_msg_stamp = msg.header.stamp
-        input_bgr_image = cv2.imdecode(
-            np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
-            cv2.IMREAD_UNCHANGED,
-        )
+        if self.cnt % self.callback_rate == 0:
+            self.cnt = 0
+            
+            input_msg_stamp = msg.header.stamp
+            input_bgr_image = cv2.imdecode(
+                np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
+                cv2.IMREAD_UNCHANGED,
+            )
 
-        red_lines_mask = self.xsec_detector.detect_red_lines(input_bgr_image)
-
-        self.validate_mask_shapes(input_bgr_image, red_lines_mask)
-
-        self.publish_line_masks(red_lines_mask, input_msg_stamp)
+            lines_mask, lines, projected_lines = line_detection(input_bgr_image)
+            #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
+            
+            #plot lines on image
+            bgr_image_w_lines = plot_lines(input_bgr_image, lines, (0,0,255))
+            self.publish_line_masks(bgr_image_w_lines, input_msg_stamp)
+            
+            four_way_x_sec = XSecTile()
+            score, eval = evaluate(four_way_x_sec, projected_lines)
+            print(score)
+            self.publish_xsec_eval(eval, input_msg_stamp)
+        
 
 
 if __name__ == "__main__":
