@@ -13,10 +13,7 @@ except ModuleNotFoundError:
     CV_BRIDGE_AVAILABLE = False
 
 from sensor_msgs.msg import CompressedImage
-<<<<<<< HEAD
-=======
 from std_msgs.msg import Bool
->>>>>>> dev-xsec-detection
 
 from XsecDetector import (
     line_detection,
@@ -50,11 +47,7 @@ class XsecDetection:
 
         if not self.received_first_input_msg_image:
             rospy.loginfo(
-<<<<<<< HEAD
-                f"Play a rosbag!, waiting to receive messages from the topic {self.name_sub_image_input_topic}"
-=======
                 f"Waiting to receive messages from the topic {self.name_sub_image_input_topic}"
->>>>>>> dev-xsec-detection
             )
 
         while not self.received_first_input_msg_image:
@@ -84,11 +77,7 @@ class XsecDetection:
             "~topics/pub/red_lines_mask"
         )
         self.name_pub_image_xsec_eval_topic = get_rosparam("~topics/pub/xsec_eval")
-<<<<<<< HEAD
-
-=======
         self.name_pub_bool_xsec_flag = get_rosparam("~topics/pub/xsec_flag")
->>>>>>> dev-xsec-detection
 
     def setup_publishers_and_subscribers(self) -> None:
         """
@@ -113,15 +102,12 @@ class XsecDetection:
             CompressedImage,
             queue_size=10,
         )
-<<<<<<< HEAD
-=======
         
         self.pub_bool_xsec_flag = rospy.Publisher(
             self.name_pub_bool_xsec_flag,
             Bool,
             queue_size=10,
         )
->>>>>>> dev-xsec-detection
 
     def validate_mask_shapes(
         self,
@@ -177,17 +163,10 @@ class XsecDetection:
         self.pub_image_red_lines_mask.publish(red_lines_mask_msg)
         
     def publish_xsec_eval(
-<<<<<<< HEAD
-            self,
-            image: NDArray[np.uint8], #np.red_lines_mask: NDArray[np.bool_],
-            input_msg_stamp: rospy.Time,
-        ) -> None:
-=======
         self,
         image: NDArray[np.uint8], #np.red_lines_mask: NDArray[np.bool_],
         input_msg_stamp: rospy.Time,
     ) -> None:
->>>>>>> dev-xsec-detection
         """
 
         Args:
@@ -208,15 +187,12 @@ class XsecDetection:
         xsec_eval_msg.header.stamp = input_msg_stamp
 
         self.pub_image_red_xsec_eval.publish(xsec_eval_msg)
-<<<<<<< HEAD
-=======
         
     def publish_xsec_flag(
         self,
         flag: np.bool
     ) -> None:
         self.pub_bool_xsec_flag.publish(flag)
->>>>>>> dev-xsec-detection
 
     def xsec_detection_callback(self, msg: CompressedImage) -> None:
         """
@@ -230,11 +206,7 @@ class XsecDetection:
 
         self.cnt += 1
         self.received_first_input_msg_image = True
-<<<<<<< HEAD
-
-=======
         #sync callback
->>>>>>> dev-xsec-detection
         if self.cnt % self.callback_rate == 0:
             self.cnt = 0
             
@@ -244,20 +216,6 @@ class XsecDetection:
                 cv2.IMREAD_UNCHANGED,
             )
 
-<<<<<<< HEAD
-            lines_mask, lines, projected_lines = line_detection(input_bgr_image)
-            #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
-            
-            #plot lines on image
-            bgr_image_w_lines = plot_lines(input_bgr_image, lines, (0,0,255))
-            self.publish_line_masks(bgr_image_w_lines, input_msg_stamp)
-            
-            four_way_x_sec = XSecTile()
-            score, eval = evaluate(four_way_x_sec, projected_lines)
-            print(score)
-            self.publish_xsec_eval(eval, input_msg_stamp)
-        
-=======
             lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
             #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
             
@@ -271,7 +229,6 @@ class XsecDetection:
     
             self.publish_xsec_eval(eval, input_msg_stamp)
             self.publish_xsec_flag(x_sec_flag)
->>>>>>> dev-xsec-detection
 
 
 if __name__ == "__main__":
