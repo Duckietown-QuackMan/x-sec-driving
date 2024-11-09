@@ -38,6 +38,6 @@ Detected Line Segments
 Evaluation of Xsec Detection
 
 # Test Setup
-<img src="media/img_1656_720.png" width="400" />
-<img src="media/img_1658_720.png" width="400" />
+<img src="media/img_1656_720.jpg" width="400" />
+<img src="media/img_1658_720.jpg" width="400" />
 

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+
+    <!-- Define the path -->
+    <arg name="path" default="straight"/>
+
+    <!-- Define the /use_sim_time parameter -->
+    <arg name="use_sim_time" default="false"/>
+    <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+    <!-- Define the paths to the parameter files -->
+    <arg name="topics_param_file_name" default="$(find x_sec_driving)/params/topics.yaml"/>
+    <arg name="path_param_file_name" default="$(find x_sec_driving)/params/paths.yaml"/>
+
+    <!-- Launch the exercise node, loading the specified parameter files (.yaml) -->
+    <node name="exercise1" pkg="exercise1" type="run_node.py" output="screen" required="true">
+        <rosparam command="load" file="$(arg topics_param_file_name)" ns="topics"/>
+        <rosparam command="load" file="$(arg path_param_file_name)" ns="paths"/>
+        <param name="path"   type="string" value="$(arg path)" />
+    </node>
+    
+</launch>
