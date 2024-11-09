@@ -28,13 +28,13 @@ Rel(SystemA, SystemC, "/gimpy/xsec_detection/xsec_flag/bool", "std_msgs/Bool")
 ```
 
 # Cross section tile
-<img src=".media/4way_4_done.png]" width="400" />
+<img src="media/4way_4_done.png]" width="400" />
 Cross section tile
 
 # Cross section detection 
-<img src=".media/x_sec_detection.png" width="400" />
+<img src="media/x_sec_detection.png" width="400" />
 Detected Line Segments
-<img src=".media/x_sec_detection_eval.png" width="400" />
+<img src="media/x_sec_detection_eval.png" width="400" />
 Evaluation of Xsec Detection
 
 
