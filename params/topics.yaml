@@ -1,0 +1,7 @@
+pub: # Published topics
+  red_lines_mask: /gimpy/xsec_detection/mask_red_lines/compressed
+  xsec_eval: /gimpy/xsec_detection/xsec_eval/compressed
+  xsec_flag: /gimpy/xsec_detection/xsec_flag/bool
+
+sub: # Subscribed topics
+  camera: /gimpy/camera_node/image/compressed

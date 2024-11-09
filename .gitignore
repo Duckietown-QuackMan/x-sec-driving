@@ -1,0 +1,44 @@
+# Ignore build directories
+/build/
+/devel/
+/install/
+
+# Ignore ROS log files
+/logs/
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+
+# Ignore system-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore Python cache files
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore ROS-specific generated files
+*.msg
+*.srv
+*.action
+*.cfgc
+*.cfg
+
+# Ignore other common files
+*.log
+*.pid
+*.db
+*.xml
+
+# Ignore .rosinstall and .rosdep files
+*.rosinstall
+*.rosdep
+
+# Ignore ROS tools and temporary files
+*.ros

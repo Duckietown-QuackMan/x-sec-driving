@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+
+    <!-- Launch x_sec_detection node  -->
+    <include file="$(find x_sec_driving)/launch/x_sec_detection.launch"/>
+
+    <!-- Launch RQT  -->
+
+    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui"
+    args="--perspective-file $(find x_sec_driving)/rqt/x_sec_detection.perspective" output="screen" />
+    
+</launch>
