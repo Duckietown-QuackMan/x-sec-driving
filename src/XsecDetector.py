@@ -56,8 +56,13 @@ HSV_RANGES_YELLOW = [
 
 # colors in this range can be considered as red
 HSV_RANGES_RED = [
+<<<<<<< HEAD
     (0, 70, 50),
     (10, 255, 255),
+=======
+    (170, 70, 50),
+    (180, 255, 255),
+>>>>>>> dev-xsec-detection
 ]
 
 # --- Functions for plotting
@@ -200,7 +205,11 @@ def matplotlib_to_numpy(fig: plt.Figure) -> np.ndarray:
 
     return img
 
+<<<<<<< HEAD
 # --- Functions used for score evaluation
+=======
+# --- Functions for score evaluation
+>>>>>>> dev-xsec-detection
 def buffer_borders(gt_lines: List[Union[LineString, MultiLineString]], buffer_size: float = 0.01) -> List[Polygon]:
     """
     Buffers the borders of input line geometries to create polygons with specified buffer size.
@@ -362,8 +371,13 @@ def evaluate(
     tile: "XSecTile",
     detected_ground_segment: List[Tuple[float, float, float, float]],
     buffer_size: float = 0.005,
+<<<<<<< HEAD
     score_radius: float = 1.5,
     passing_threshold: float = 0.55,
+=======
+    score_radius: float = 0.3,
+    passing_threshold: float = 0.08,
+>>>>>>> dev-xsec-detection
 ) -> Tuple[float, np.ndarray]:
     """
     Evaluates the detected line segments against ground truth lane markings, calculating an Intersection over Union (IoU) score.
@@ -396,27 +410,47 @@ def evaluate(
     assert gt_union.is_valid, "The Union geometry of White Ground Truth is not valid!"
 
     # Calculate IoU scores for each radius and visualize
+<<<<<<< HEAD
     circle = Point(0,-0.105).buffer(score_radius)
+=======
+    circle = Point(0,0).buffer(score_radius)
+>>>>>>> dev-xsec-detection
 
     # Intersect the unions with the scoring circle
     gt = gt_union.intersection(circle)
     det = detection_union.intersection(circle)
+<<<<<<< HEAD
 
+=======
+    print("GT union [cm2]: ", gt.area * 1e2, " Det union [cm2]: ", det.area * 1e2)
+>>>>>>> dev-xsec-detection
     # Calculate intersection and union areas for IoU
     inter = gt.intersection(det).area
     union = gt.union(det).area
     score = inter / float(union)
+<<<<<<< HEAD
 
     # Visualize the results for the current radius
     bgr = plot_shapely_geometries(
         [gt, det],
         colors=["blue", "yellow"],
         alphas=[0.8, 0.5],
+=======
+    print("Intersec [cm2]: ", inter * 1e2, " union [cm2]: ", union * 1e2)
+    print(score)
+
+    # Visualize the results for the current radius
+    bgr = plot_shapely_geometries(
+        [gt, det, circle],
+        colors=["blue", "yellow", "red"],
+        alphas=[0.8, 0.5, 0.8],
+>>>>>>> dev-xsec-detection
         extra_info=f"R={score_radius}, IoU={score:.4f})"
     )
 
     passed = score >= passing_threshold
 
+<<<<<<< HEAD
     return score, bgr
 
 
@@ -512,6 +546,13 @@ class Tile:
 # ------------------------------------------------------------------------------
 # ---------- Image Process Function  -------------------------------------------
 # ------------------------------------------------------------------------------
+=======
+    return score, bgr, passed
+
+
+
+# -- Image Process Function
+>>>>>>> dev-xsec-detection
 
 def crop_image(img: np.ndarray) -> np.ndarray:
     """
@@ -522,10 +563,17 @@ def crop_image(img: np.ndarray) -> np.ndarray:
         np.ndarray: The cropped image
     """
 
+<<<<<<< HEAD
     top=0
     bottom=0
     left=0 
     right=0
+=======
+    top=200
+    bottom=0
+    left=80 
+    right=80
+>>>>>>> dev-xsec-detection
 
     return img[top:img.shape[0] - bottom, left:img.shape[1] - right]
 
@@ -573,7 +621,11 @@ def dilate_edge_mask(edge_mask: np.ndarray) -> np.ndarray:
         np.ndarray: The dilated edge mask.
     """
 
+<<<<<<< HEAD
     kernel_size = 3
+=======
+    kernel_size = 7
+>>>>>>> dev-xsec-detection
     iterations = 1
     # Create a square kernel of specified size
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
@@ -596,7 +648,11 @@ def color_dilated_edges(
         np.ndarray: The image with colored edges, masked by the dilated edge mask.
     """
 
+<<<<<<< HEAD
         # Convert 2D mask to 3-channel
+=======
+    # Convert 2D mask to 3-channel
+>>>>>>> dev-xsec-detection
     dilated_edge_mask_3d = np.dstack([dilated_edge_mask] * 3)
 
     # Only show the original color where the mask is active
@@ -640,11 +696,19 @@ def detect_lines(edges: np.ndarray) -> List[np.ndarray]:
     # Use the Hough Line Transform to detect lines
     lines = cv2.HoughLinesP(
         edges,
+<<<<<<< HEAD
         rho=1,                      # Distance resolution of the accumulator in pixels
         theta=0.1 * np.pi / 180,       # Angle resolution of the accumulator in radians
         threshold=5,                  # Accumulator threshold for line detection
         minLineLength=5,               # Minimum length of line. Shorter lines are rejected
         maxLineGap=1                   # Maximum allowed gap between line segments to treat them as single line
+=======
+        rho=10,                       # Distance resolution of the accumulator in pixels
+        theta= 1 * np.pi / 180,      # Angle resolution of the accumulator in radians
+        threshold=5,                  # Accumulator threshold for line detection
+        minLineLength=10,             # Minimum length of line. Shorter lines are rejected
+        maxLineGap=5                  # Maximum allowed gap between line segments to treat them as single line
+>>>>>>> dev-xsec-detection
     )
 
     # --- keep following ---
@@ -712,6 +776,7 @@ def project_segments_image_to_ground(
 
     return ground_segments
 
+<<<<<<< HEAD
 
 class XSecTile():
     def __init__(self):
@@ -721,6 +786,8 @@ class XSecTile():
         return (self.x_sec_polygon, self.x_sec_color)
 
 
+=======
+>>>>>>> dev-xsec-detection
 def line_detection(image: np.ndarray) -> Tuple[List[Tuple[float, float, float, float]], List[Tuple[float, float, float, float]]]:
     """
     Performs full line detection on an input image, including preprocessing, edge detection, line detection and projection to ground plane.
@@ -758,5 +825,104 @@ def line_detection(image: np.ndarray) -> Tuple[List[Tuple[float, float, float, f
     # Step 8: Project the detected line segments to the ground plane
     projected_red_lines = project_segments_image_to_ground(H, red_lines, offset_y=180)
 
+<<<<<<< HEAD
     return red_edges, red_lines, projected_red_lines
 
+=======
+    return red_edges, red_lines, projected_red_lines, cropped_image
+
+# --- Data structure to hold input data and ground truth
+class Tile:
+    def __init__(
+        self,
+        dir_path: str,  # path where the data directory is
+        fpv_fname: str = "fpv.png",
+        polygons_fname: str = "polygons_with_bgr.json",
+        config_fname: str = "config.json"
+    ):
+        """
+        Initializes the Tile object by loading the FPV image, ground truth polygons, and configuration data.
+
+        Parameters:
+            dir_path (str): Path to the directory containing data files.
+            fpv_fname (str): Filename for the first-person view (FPV) image (default is "fpv.png").
+            polygons_fname (str): Filename for the JSON file containing polygons with BGR colors (default is "polygons_with_bgr.json").
+            config_fname (str): Filename for the JSON file containing configuration data (default is "config.json").
+        """
+        # Load the FPV image
+        p_fpv = os.path.join(dir_path, fpv_fname)
+        self._fpv_image = cv2.imread(p_fpv)
+
+        # Load ground truth polygons and associated colors
+        p_polygons = os.path.join(dir_path, polygons_fname)
+        with open(p_polygons, 'r') as f:
+            loaded_data = json.load(f)
+        self._lst_poly_w_bgr = []
+        for item in loaded_data:
+            polygon = shape(item["polygon"])
+            color = tuple(item["color"])
+            self._lst_poly_w_bgr.append((polygon, color))
+
+        # Load configuration data
+        p_config = os.path.join(dir_path, config_fname)
+        with open(p_config, 'r') as f:
+            self._config = json.load(f)
+
+    def fpv(self) -> 'np.ndarray':
+        """
+        Returns the FPV image.
+
+        Returns:
+            np.ndarray: The loaded FPV image.
+        """
+        return self._fpv_image
+
+    def data_id(self) -> str:
+        """
+        Returns the ID from the configuration data.
+
+        Returns:
+            str: The data identifier.
+        """
+        return self._config.get("ID", "unset")
+
+    def disp_config(self) -> None:
+        """
+        Displays the configuration data in JSON format.
+        """
+        print(json.dumps(self._config, indent=2))
+
+    def markings(self) -> List[Tuple[Polygon, Tuple[int, int, int]]]:
+        """
+        Returns all the markings in the tile, each with an associated color.
+
+        Returns:
+            List[Tuple[Polygon, Tuple[int, int, int]]]: A list of polygons with their associated BGR color.
+        """
+        return self._lst_poly_w_bgr
+
+    def white_polygons(self) -> List[Polygon]:
+        """
+        Returns a list of ground polygons that are white.
+
+        Raises:
+            Exception: If the FPV image has not been generated.
+        """
+        return [poly for poly, color in self._lst_poly_w_bgr if color == (255, 255, 255)]
+
+    def yellow_polygons(self) -> List[Polygon]:
+        """
+        Returns a list of ground polygons that are yellow.
+
+        Returns:
+            List[Polygon]: A list of yellow polygons.
+        """
+        return [poly for poly, color in self._lst_poly_w_bgr if color == (0, 255, 255)]
+
+class XSecTile():
+    def __init__(self):
+        self.x_sec_polygon : List[Polygon] = [Polygon(((0.15, -0.10), (0.15, 0.10), (0.20, 0.10), (0.20, -0.10), (0.15, -0.10)))]
+        self.x_sec_color = (255, 0, 0)
+    def markings(self) -> List[Tuple[Polygon, Tuple[int, int, int]]]:
+        return (self.x_sec_polygon, self.x_sec_color)
+>>>>>>> dev-xsec-detection
