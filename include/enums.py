@@ -1,4 +1,5 @@
 from enum import Enum, IntEnum
+from typing import List, Union
 
 
 class MotionCommand:
@@ -31,21 +32,6 @@ class MotionCommand:
             Return the string representation of the direction in lowercase.
             """
             return self.name.lower()
-
-
-class Shape(Enum):
-    """
-    Enumeration for different shapes the robot can draw.
-    """
-    SQUARE = 0
-    CIRCLE = 1
-    EIGHT = 2
-
-    def __str__(self):
-        """
-        Return the string representation of the shape in lowercase.
-        """
-        return self.name.lower()
     
 class Path(Enum):
     """ 
@@ -60,8 +46,7 @@ class Path(Enum):
         Return the string representation of the shape in lowercase.
         """
         return self.name.lower()
-        
-
+      
 
 class DistanceType(Enum):
     """
@@ -75,3 +60,19 @@ class DistanceType(Enum):
         Return the string representation of the distance type in lowercase.
         """
         return self.name.lower()
+    
+    
+class Command:
+    
+    type: MotionCommand.Type = MotionCommand.Type.STRAIGHT
+    direction: Union[MotionCommand.Direction | None] = None
+    distance: float = 0.0
+    radius: Union[float | None] = None
+    
+
+class Mission:
+    """
+    Differnet missions.
+    """
+    name: str
+    commands: List[Command]
