@@ -21,7 +21,7 @@ Enterprise_Boundary(b1, "workspace", "includes all packages") {
   System_Boundary(b4, "duckie_pkg", "Package") {
     System(camera, "camera_node", "Node")
     System(motor_driver, "wheels_driver_node", "Node")
-    System(veltopose, "velocity_to_pose_node", "Node"),
+    System(veltopose, "velocity_to_pose_node", "Node")
   }
 }
 
