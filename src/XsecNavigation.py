@@ -1,5 +1,7 @@
 from include.enums import MotionCommand, DistanceType, Mission, Command
 from dataclasses import dataclass
+from duckietown_msgs.msg import WheelsCmdStamped
+from geometry_msgs.msg import PoseStamped, Pose
 
 #extensions
 import math
@@ -13,6 +15,11 @@ class Distance:
 
 class XsecNavigator:
     def __init__(self, move_straight_params, move_right_params, move_left_params):
+        
+        #init params
+        self.wheel_distance = 0.102  # Distance between the left and right wheels.
+        self.tol_curve = 0.005
+        self.tol_rotate = 0.015
         
         
         self.move_straight = Mission(
@@ -59,15 +66,14 @@ class XsecNavigator:
                 initial_pose (Pose): The initial pose of the robot.
                 commands (list): A list of motion commands for the robot to execute.
             """
-            self.wheel_distance = 0.102  # Distance between the left and right wheels.
+            
             self.commands = commands  # List of motion commands.
             self.current_command_index = 0  # Track which command is being executed.
             self.initial_pose = initial_pose
             self.all_commands_excecuted = False
             self.value_traveled = 0
             self.value_idx = 0
-            self.tol_curve = 0.005
-            self.tol_rotate = 0.015
+            
             
 
         def get_wheel_cmd(self, cur_pose: Pose) -> WheelsCmdStamped:

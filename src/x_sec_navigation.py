@@ -9,6 +9,8 @@ from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 from std_msgs.msg import Bool
 from include.enums import Path
 from XsecNavigation import XsecNavigator
+
+import sys
     
 try:
     from cv_bridge import CvBridge
@@ -70,6 +72,10 @@ class XsecNavigation:
             return param
 
         # paths params
+        self.name_sub_pose_topic = get_rosparam("~topics/sub/pose")
+        self.name_sub_flag_topic = get_rosparam("~topics/sub/flag")
+        self.name_pub_flag_topic = get_rosparam("~topics/pub/flag")
+        self.name_pub_wheel_cmd_topic = get_rosparam("~topics/pub/wheels_cmd")
         self.move_straight_params = get_rosparam("~paths/straight")
         self.move_right_params = get_rosparam("~topics/right")
         self.move_left_params = get_rosparam("~topics/left")
@@ -119,6 +125,12 @@ class XsecNavigation:
             elif Path.LEFT:
                 print("Move left")
                 move = self.x_sec_navigator.Move(self.name_sub_pose_topic, self.x_sec_navigator.move_left)
+            else:
+                except ValueError:
+                # Print an error message if conversion fails
+                print("Error: Invalid mission. Please enter a valid number.", file=sys.stderr)
+                sys.exit(1)  # Exit with a non-zero code indicating an error
+                
                 
             self.x_sec_navigator.run_path()
             

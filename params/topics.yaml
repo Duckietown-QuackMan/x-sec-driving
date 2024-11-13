@@ -1,5 +1,7 @@
 pub: # Published topics
   wheels_cmd: /gimpy/wheels_driver_node/wheels_cmd
+  flag: /quack_man/x_sec_navigating
 
 sub: # Subscribed topics
   pose: /gimpy/velocity_to_pose_node/pose
+  flag: /quack_man/x_sec_go
