@@ -2,6 +2,7 @@
 ROS Package of crosssection driving
 
 
+<<<<<<< HEAD
 # ROS Architecture
 ```mermaid
 C4Context
@@ -41,3 +42,11 @@ Evaluation of Xsec Detection
 <img src="media/img_1656_720.jpg" width="400" />
 <img src="media/img_1658_720.jpg" width="400" />
 
+=======
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+    
+>>>>>>> 639055a (readme)
