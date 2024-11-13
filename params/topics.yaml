@@ -1,7 +1,17 @@
 pub: # Published topics
+  #-- xsec_det
   wheels_cmd: /gimpy/wheels_driver_node/wheels_cmd
   flag: /quack_man/x_sec_navigating
+  
+  #-- xsec_det
+  red_lines_mask: /gimpy/xsec_detection/mask_red_lines/compressed
+  xsec_eval: /gimpy/xsec_detection/xsec_eval/compressed
+  xsec_flag: /gimpy/xsec_detection/xsec_flag/bool
 
 sub: # Subscribed topics
+  #-- xsec_det
   pose: /gimpy/velocity_to_pose_node/pose
   flag: /quack_man/x_sec_go
+  
+  #-- xsec_det
+  camera: /gimpy/camera_node/image/compressed
