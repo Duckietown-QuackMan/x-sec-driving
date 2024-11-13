@@ -24,7 +24,9 @@ Enterprise_Boundary(b1, "workspace", "includes all packages") {
     System(veltopose, "velocity_to_pose_node", "Node")
   }
 
-  System_Boundary(b5, "Debugging") {}
+  System_Boundary(b5, "Debugging") {
+
+  }
 }
 
 Rel(camera, xsec_det, "/gimpy/camera_node/image/compressed" ,"sensor_msg/CompressedImage")
