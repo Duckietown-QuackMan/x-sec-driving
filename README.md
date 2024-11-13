@@ -23,14 +23,21 @@ Enterprise_Boundary(b1, "workspace", "includes all packages") {
     System(motor_driver, "wheels_driver_node", "Node")
     System(veltopose, "velocity_to_pose_node", "Node")
   }
+
+  System_Boundary(b5, "Debugging")
 }
 
 Rel(camera, xsec_det, "/gimpy/camera_node/image/compressed" ,"sensor_msg/CompressedImage")
 Rel(xsec_det, sm, "/gimpy/xsec_detection/xsec_flag/bool", "std_msgs/Bool")
+
+
 Rel(xsec_nav, sm, "/quackman/x_sec_navigating", "std_msgs/Bool")
 Rel(xsec_nav, motor_driver, "/gimpy/wheels_driver_node/wheels_cmd", "duckietown.msg/WheelsCmdStamped")
 Rel(veltopose, xsec_nav, "/gimpy/velocity_to_pose_node/pose", "duckietown.msg/Pose2DStamped")
 Rel(sm, xsec_nav, "/quackman/x_sec_go", "std_msgs/Bool")
+
+Rel(xsec_det, b5, "/gimpy/xsec_detection/mask_red_lines/compressed","sensor_msg/CompressedImage")
+Rel(xsec_det, b5, "/gimpy/xsec_detection/xsec_eval/compressed","sensor_msg/CompressedImage")
 
 ```
 
