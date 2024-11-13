@@ -7,7 +7,7 @@ ROS Package of crosssection driving
 C4Context
 title Cross Section Driving Package
 
-Enterprise_Boundary(b1, "workspace", "includes all packages") {
+Workspace_Boundary(b1, "workspace", "includes all packages") {
 
   System_Boundary(b2, "x-sec-driving_pkg", "Package") {
     System(xsec_det,"x_sex_detection", "Node")
