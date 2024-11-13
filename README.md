@@ -6,25 +6,23 @@ ROS Package of crosssection driving
 ```mermaid
 C4Context
 title Cross Section Driving Package
+Container_Boundary(b1, "workspace", "includes all packages") {
 
-Enterprise_Boundary(b1, "workspace", "includes all packages") {
-
-  System_Boundary(b2, "x-sec-driving_pkg", "Package") {
+  Boundary(b2, "x-sec-driving_pkg", "Package") {
     System(xsec_det,"x_sex_detection", "Node")
     System(xsec_nav, "x_sec_nav", "Node")
   }
 
-  System_Boundary(b3, "state_controller_pkg", "Package") {
+  Boundary(b3, "state_controller_pkg", "Package") {
     System(sm, "state_machine", "Node")
   }
 
-  System_Boundary(b4, "duckie_pkg", "Package") {
+  Boundary(b4, "duckie_pkg", "Package") {
     System(camera, "camera_node", "Node")
     System(motor_driver, "wheels_driver_node", "Node")
     System(veltopose, "velocity_to_pose_node", "Node")
   }
-
-  System_Boundary(b5, "Debugging") {
+  Boundary(b5, "Debugging", "Topics") {
     System(debug, "Debugging Topics")
   }
 }
@@ -38,8 +36,8 @@ Rel(xsec_nav, motor_driver, "/gimpy/wheels_driver_node/wheels_cmd", "duckietown.
 Rel(veltopose, xsec_nav, "/gimpy/velocity_to_pose_node/pose", "duckietown.msg/Pose2DStamped")
 Rel(sm, xsec_nav, "/quackman/x_sec_go", "std_msgs/Bool")
 
-Rel(xsec_det, b5, "/gimpy/xsec_detection/mask_red_lines/compressed","sensor_msg/CompressedImage")
-Rel(xsec_det, b5, "/gimpy/xsec_detection/xsec_eval/compressed","sensor_msg/CompressedImage")
+Rel(xsec_det, debug, "/gimpy/xsec_detection/mask_red_lines/compressed","sensor_msg/CompressedImage")
+Rel(xsec_det, debug, "/gimpy/xsec_detection/xsec_eval/compressed","sensor_msg/CompressedImage")
 
 ```
 
