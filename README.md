@@ -25,7 +25,7 @@ Enterprise_Boundary(b1, "workspace", "includes all packages") {
   }
 
   System_Boundary(b5, "Debugging") {
-      System(debug, "Debugging Topics")
+    System(debug, "Debugging Topics")
   }
 }
 
