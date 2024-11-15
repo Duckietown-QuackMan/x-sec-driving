@@ -1,5 +1,5 @@
 pub: # Published topics
-  #-- xsec_det
+  #-- xsec_nav
   wheels_cmd: /gimpy/wheels_driver_node/wheels_cmd
   flag: /quack_man/x_sec_navigating
   
@@ -9,7 +9,7 @@ pub: # Published topics
   xsec_flag: /gimpy/xsec_detection/xsec_flag/bool
 
 sub: # Subscribed topics
-  #-- xsec_det
+  #-- xsec_nav
   pose: /gimpy/velocity_to_pose_node/pose
   flag: /quack_man/x_sec_go
   

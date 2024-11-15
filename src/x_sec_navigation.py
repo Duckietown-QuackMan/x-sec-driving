@@ -1,17 +1,22 @@
+#!/usr/bin/env python3
+
 import rospy
 import cv2
 import numpy as np
 import random
 from numpy.typing import NDArray   
 
+import sys
+print(sys.path)
+
 from duckietown_msgs.msg import WheelsCmdStamped, Pose2DStamped
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion 
 from std_msgs.msg import Bool
-from include.enums import Path
+from enums import Path
 from XsecNavigation import XsecNavigator
 
-import sys
-    
+
+
 try:
     from cv_bridge import CvBridge
     CV_BRIDGE_AVAILABLE = True
@@ -77,8 +82,8 @@ class XsecNavigation:
         self.name_pub_flag_topic = get_rosparam("~topics/pub/flag")
         self.name_pub_wheel_cmd_topic = get_rosparam("~topics/pub/wheels_cmd")
         self.move_straight_params = get_rosparam("~paths/straight")
-        self.move_right_params = get_rosparam("~topics/right")
-        self.move_left_params = get_rosparam("~topics/left")
+        self.move_right_params = get_rosparam("~paths/right")
+        self.move_left_params = get_rosparam("~paths/left")
         
     def setup_publishers_and_subscribers(self) -> None:
         """
@@ -88,6 +93,7 @@ class XsecNavigation:
         self.sub_pose = rospy.Subscriber(
             self.name_sub_pose_topic,
             Pose2DStamped,
+            # self.xsec_navigation_callback,
             queue_size=10,
         )
         
@@ -111,6 +117,10 @@ class XsecNavigation:
         )
         
     def xsec_navigation_callback(self):
+        #fake node
+        # if self.cnt == 100:
+        #     self.name_sub_flag_topic == True
+        #     self.cnt = 0
         
         if self.name_sub_flag_topic == True:
             #get next mission
@@ -126,16 +136,14 @@ class XsecNavigation:
                 print("Move left")
                 move = self.x_sec_navigator.Move(self.name_sub_pose_topic, self.x_sec_navigator.move_left)
             else:
-                except ValueError:
                 # Print an error message if conversion fails
                 print("Error: Invalid mission. Please enter a valid number.", file=sys.stderr)
                 sys.exit(1)  # Exit with a non-zero code indicating an error
                 
-                
-            self.x_sec_navigator.run_path()
             
             while not move.all_commands_excecuted:
                 # calculate wheel cmd
+                print(self.name_sub_pose_topic)
                 wheel_cmd = self.move.get_wheel_cmd(self.name_sub_pose_topic)
                 self.pub_wheel_cmd.publish(wheel_cmd)
                 self.rate.sleep()
@@ -144,11 +152,13 @@ class XsecNavigation:
             self.pub_flag.publish(True)
             
             #wait for state machine to set the flags
+            self.name_sub_flag_topic == True
             rospy.sleep(2)
             
         else: 
             print("... wait for xsec GO-command ...")
-            
+            rospy.sleep(0.5)
+            # self.cnt += 1
         
 if __name__ == "__main__":
     rospy.init_node("x_sec_detection", anonymous=True)

@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <launch>
 
-    <!-- Define the path -->
-    <arg name="path" default="straight"/>
-
-    <!-- Launch exercise1 node  -->
-    <include file="$(find x_sec_driving)/launch/x_sec_navigation.launch">
-        <arg name="path" value="$(arg path)"/>
-    </include>
+    <!-- Launch x_sec_navigation node  -->
+    <include file="$(find x_sec_driving)/launch/x_sec_navigation.launch"/>
 
     <!-- Launch RViz  -->
 

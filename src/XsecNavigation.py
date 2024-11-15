@@ -1,4 +1,4 @@
-from include.enums import MotionCommand, DistanceType, Mission, Command
+from enums import MotionCommand, DistanceType, Mission, Command
 from dataclasses import dataclass
 from duckietown_msgs.msg import WheelsCmdStamped
 from geometry_msgs.msg import PoseStamped, Pose
@@ -7,20 +7,18 @@ from geometry_msgs.msg import PoseStamped, Pose
 import math
 import tf.transformations as tf
 import numpy as np
-
-@dataclass
-class Distance:
-    distance_type: DistanceType
-    value: float
+    
+#init params
+WHEEL_DISTANCE = 0.102
+TOL_CURVE = 0.005
+TOL_ROTATE = 0.015
+FIXED_SPEED = 0.2    
+FIXED_ANGULAR_SPEED = 0.5
+FIXED_ROTATION_SPEED = 0.05 * math.pi / 4
+    
 
 class XsecNavigator:
     def __init__(self, move_straight_params, move_right_params, move_left_params):
-        
-        #init params
-        self.wheel_distance = 0.102  # Distance between the left and right wheels.
-        self.tol_curve = 0.005
-        self.tol_rotate = 0.015
-        
         
         self.move_straight = Mission(
             name="move_straight",
@@ -57,7 +55,6 @@ class XsecNavigator:
             ]
         )
 
-
     class Move:
         def __init__(self, initial_pose, commands=[]):
             """
@@ -70,12 +67,10 @@ class XsecNavigator:
             self.commands = commands  # List of motion commands.
             self.current_command_index = 0  # Track which command is being executed.
             self.initial_pose = initial_pose
+            self.initial_yaw = tf.euler_from_quaternion([self.initial_pose.orientation.x, self.initial_pose.orientation.y, self.initial_pose.orientation.z, self.initial_pose.orientation.w])[2]
             self.all_commands_excecuted = False
-            self.value_traveled = 0
-            self.value_idx = 0
+            self.distance_traveled = 0
             
-            
-
         def get_wheel_cmd(self, cur_pose: Pose) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.
@@ -84,105 +79,80 @@ class XsecNavigator:
             Returns:
                 WheelsCmdStamped: The command for the robot's wheels.
             """
+            wheel_cmd = WheelsCmdStamped()
+            
             if self.current_command_index >= len(self.commands):
                 # All commands have been executed, stop the robot
-                wheel_cmd = WheelsCmdStamped()
                 wheel_cmd.vel_left = 0
                 wheel_cmd.vel_right = 0
                 self.all_commands_excecuted = True
-                return wheel_cmd
-            
-
-            # Get the current command
-            current_command = self.commands[self.current_command_index]
-            command_type = current_command[0]  # MotionCommand.Type
-            direction = current_command[1]  # MotionCommand.Direction
-            value = current_command[2]  # Distance for STRAIGHT, angle for ROTATE, radius for CURVE
-
-            wheel_cmd = WheelsCmdStamped()
-
-            if command_type == MotionCommand.Type.STRAIGHT:
-                self.value_idx = 1 #no multiturn possible 
-                # Move in a straight line, either forward or backward
-                if direction == MotionCommand.Direction.POSITIVE:
-                    speed = 0.2 
-                else:
-                    speed = -0.2
-                    
-                wheel_cmd.vel_left = speed
-                wheel_cmd.vel_right = speed
-                self.value_traveled = np.sqrt((np.abs(cur_pose.position.x) - np.abs(self.initial_pose.position.x))**2 + (np.abs(cur_pose.position.y) - np.abs(self.initial_pose.position.y))**2)
-                current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
-                print("Going Straight: traveled ", self.value_traveled, " speed ", speed, ", yaw ", current_yaw)
-
-            elif command_type == MotionCommand.Type.ROTATE:
-                # Rotate the robot, either clockwise or counterclockwise
-                angular_speed = 0.05 * math.pi / 4  # Example speed for rotation
-                if direction == MotionCommand.Direction.POSITIVE:
-                    # Counterclockwise rotation
-                    wheel_cmd.vel_left = -angular_speed
-                    wheel_cmd.vel_right = angular_speed
-                else:
-                    # Clockwise rotation
-                    wheel_cmd.vel_left = angular_speed
-                    wheel_cmd.vel_right = -angular_speed
                 
-                #logic to stop after rotating the required angle
-                # Convert quaternion to Euler angles (roll, pitch, yaw)
-                initial_yaw = tf.euler_from_quaternion([self.initial_pose.orientation.x, self.initial_pose.orientation.y, self.initial_pose.orientation.z, self.initial_pose.orientation.w])[2]
-                current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
-                self.value_traveled = np.abs(initial_yaw - current_yaw) + self.tol_rotate
-                print("Rotate: traveled ", self.value_traveled, " speed ", angular_speed, ", yaw ", current_yaw )
+            else:
+                # Get the current command
+                current_command = self.commands[self.current_command_index]
+                command_type = current_command.type  
+                direction = current_command.direction  
+                distance = current_command.distance
 
-            elif command_type == MotionCommand.Type.CURVE:
-                # Move in a curve with a specified radius
-                radius = current_command[3]   
-                angular_speed = 0.5  # Example angular speed for the curve
-                # Logic to stop after moving along the required curve distance
-                initial_yaw = tf.euler_from_quaternion([self.initial_pose.orientation.x, self.initial_pose.orientation.y, self.initial_pose.orientation.z, self.initial_pose.orientation.w])[2] 
-                current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
-                            
-                print(initial_yaw, current_yaw)
-                
-                if direction == MotionCommand.Direction.POSITIVE:
-                    wheel_cmd.vel_left = angular_speed * (1 - (self.wheel_distance / (2 * radius)))
-                    wheel_cmd.vel_right = angular_speed * (1 + (self.wheel_distance / (2 * radius)))
-                    
-                    #translate yaw angle
-                    current_yaw -= initial_yaw
-                    initial_yaw = 0
-                    #rotate yaw angle
-                    current_yaw = current_yaw + 2*np.pi * (current_yaw < 0)
-                    
-                else:
-                    wheel_cmd.vel_left = angular_speed * (1 + (self.wheel_distance / (2 * radius)))
-                    wheel_cmd.vel_right = angular_speed * (1 - (self.wheel_distance / (2 * radius)))
-                    
-                    #translate yaw angle
-                    current_yaw = -1 * (current_yaw - initial_yaw)
-                    initial_yaw = 0
-                    #rotate yaw angle
-                    current_yaw = current_yaw + 2*np.pi * (current_yaw < 0)
+                if command_type == MotionCommand.Type.STRAIGHT:
+                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.move_straight(direction, cur_pose)
 
-                self.value_traveled = np.abs(current_yaw - initial_yaw) + self.tol_curve
-                
-                print("Making a curve: traveled ", self.value_traveled, " speed ", angular_speed)
+                elif command_type == MotionCommand.Type.ROTATE:
+                    # Rotate the robot, either clockwise or counterclockwise
+                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.rotate(direction, cur_pose)
+                    
+                elif command_type == MotionCommand.Type.CURVE:
+                    # Move in a curve with a specified radius
+                    radius = current_command.radius
+                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.move_on_curve(direction, cur_pose, radius)
 
-            # mutltiturn conditioning
-            if self.value_idx == 0: 
-                self.value_idx = math.ceil(value / (2*np.pi))
-            elif self.value_idx == 1 or value == 0: 
-                # finished command 
-                if self.value_traveled >= value:
+                if self.distance_traveled >= distance:
+                    #reinit
                     self.initial_pose = cur_pose
-                    self.value_idx = 0 
-                    self.value_traveled = 0
-
+                    self.distance_traveled = 0
                     self.current_command_index += 1
                     wheel_cmd.vel_left = 0
                     wheel_cmd.vel_right = 0
-            else:
-                self.value_idx -= 1
-
 
             return wheel_cmd
+        
+        
+        def move_straight(self, direction, cur_pose):
+            # Move in a straight line, either forward or backward
+            speed = FIXED_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_SPEED
+            
+            #Get traveled distances
+            self.distance_traveled = np.sqrt((np.abs(cur_pose.position.x) - np.abs(self.initial_pose.position.x))**2 + (np.abs(cur_pose.position.y) - np.abs(self.initial_pose.position.y))**2)
+            current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
+            print("Going Straight: traveled ", self.distance_traveled, " speed ", speed, ", yaw ", current_yaw)
+            
+            return speed, speed
+        
+        def rotate(self, direction, cur_pose):
+            angular_speed = FIXED_ROTATION_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_ROTATION_SPEED   # Example speed for rotation
+            
+            # Convert quaternion to Euler angles (roll, pitch, yaw)
+            current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
+            self.distance_traveled = np.abs(self.initial_yaw - current_yaw) + TOL_ROTATE
+            print("Rotate: traveled ", self.distance_traveled, " speed ", angular_speed, ", yaw ", current_yaw )
+
+            return -angular_speed, angular_speed
+        
+        def move_on_curve(self, direction, cur_pose, radius):
+            sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1 
+            
+            # get current and inital orientation
+            current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
+            self.distance_traveled = np.abs(self.wraptopi((current_yaw - self.initial_yaw))) + TOL_CURVE
+            print("Making a curve: traveled ", self.distance_traveled, " speed ", FIXED_ANGULAR_SPEED)
+    
+            return FIXED_ANGULAR_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius))), FIXED_ANGULAR_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius)))
+        
+        def wraptopi(angle):
+            #wraps to -pi to pi, also for multiturn
+            angle = angle % (2*np.pi)
+            if angle > np.pi:
+                angle -= 2*np.pi
+            else:
+                angle += 2*np.pi
+            return angle
