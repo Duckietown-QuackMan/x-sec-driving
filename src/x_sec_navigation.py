@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 import sys
 print(sys.path)
 
-from duckietown_msgs.msg import WheelsCmdStamped, Pose2DStamped
+from duckietown_msgs.msg import WheelsCmdStamped, WheelEncoderStamped
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion 
 from std_msgs.msg import Bool
 from enums import Path
@@ -25,6 +25,7 @@ except ModuleNotFoundError:
 
 from std_msgs.msg import Bool 
 
+WITH_FEEDBACK = 1
 
 class XsecNavigation:
     
@@ -51,15 +52,14 @@ class XsecNavigation:
         print()
         print()
 
-        if not self.received_first_pose_msg:
-            rospy.loginfo(
-                f"Waiting to receive messages from the topic {self.name_sub_pose_topic}"
-            )
+        # rospy.loginfo(
+        #         f"Waiting to receive messages from the topic {self.name_sub_tick_l_topic}"
+        #     )
 
-        while not self.received_first_pose_msg:
-            rospy.sleep(0.2)
+        # while not self.sub_flag:
+        #     rospy.sleep(0.2)
 
-        rospy.loginfo(f"Received topic {self.name_sub_pose_topic}!")
+        # rospy.loginfo(f"Received topic {self.name_sub_pose_topic}!")
 
     
     def setup_params(self) -> None:
@@ -77,10 +77,16 @@ class XsecNavigation:
             return param
 
         # paths params
-        self.name_sub_pose_topic = get_rosparam("~topics/sub/pose")
+        
+        #--sub
         self.name_sub_flag_topic = get_rosparam("~topics/sub/flag")
+        self.name_sub_tick_l_topic = get_rosparam('~topics/sub/ticks_left')
+        self.name_sub_tick_r_topic = get_rosparam('~topics/sub/ticks_right')
+        #--pub
         self.name_pub_flag_topic = get_rosparam("~topics/pub/flag")
         self.name_pub_wheel_cmd_topic = get_rosparam("~topics/pub/wheels_cmd")
+        
+        #path params
         self.move_straight_params = get_rosparam("~paths/straight")
         self.move_right_params = get_rosparam("~paths/right")
         self.move_left_params = get_rosparam("~paths/left")
@@ -90,10 +96,15 @@ class XsecNavigation:
         Setup the ROS publishers and subscribers for the node.
         """
 
-        self.sub_pose = rospy.Subscriber(
-            self.name_sub_pose_topic,
-            Pose2DStamped,
-            # self.xsec_navigation_callback,
+        self.sub_ticks_l = rospy.Subscriber(
+            self.name_sub_tick_l_topic,
+            WheelEncoderStamped,
+            queue_size=10,
+        )
+        
+        self.sub_ticks_r = rospy.Subscriber(
+            self.name_sub_tick_r_topic,
+            WheelEncoderStamped,
             queue_size=10,
         )
         
@@ -101,7 +112,7 @@ class XsecNavigation:
             self.name_sub_flag_topic,
             Bool,
             self.xsec_navigation_callback,
-            queue_size=10,
+            queue_size=1,
         )
         
         self.pub_wheel_cmd = rospy.Publisher(
@@ -128,13 +139,13 @@ class XsecNavigation:
              
             if path == Path.STRAIGHT: 
                 print("Move straight")
-                move = self.x_sec_navigator.Move(self.name_sub_pose_topic, self.x_sec_navigator.move_straight)
+                move = self.x_sec_navigator.Move(command=self.x_sec_navigator.move_straight, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l, self.sub_ticks_r))
             elif Path.RIGHT: 
                 print("Move right")
-                move = self.x_sec_navigator.Move(self.name_sub_pose_topic, self.x_sec_navigator.move_right)
+                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_right, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l, self.sub_ticks_r))
             elif Path.LEFT:
                 print("Move left")
-                move = self.x_sec_navigator.Move(self.name_sub_pose_topic, self.x_sec_navigator.move_left)
+                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_left, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l, self.sub_ticks_r))
             else:
                 # Print an error message if conversion fails
                 print("Error: Invalid mission. Please enter a valid number.", file=sys.stderr)
@@ -142,9 +153,12 @@ class XsecNavigation:
                 
             
             while not move.all_commands_excecuted:
-                # calculate wheel cmd
-                print(self.name_sub_pose_topic)
-                wheel_cmd = self.move.get_wheel_cmd(self.name_sub_pose_topic)
+                
+                if WITH_FEEDBACK:
+                    wheel_cmd = self.move.get_wheel_cmd_feedback_ticks(self.sub_ticks_l, self.sub_ticks_r)
+                else:
+                    # calculate wheel cmd
+                    wheel_cmd = self.move.get_wheel_cmd()
                 self.pub_wheel_cmd.publish(wheel_cmd)
                 self.rate.sleep()
             

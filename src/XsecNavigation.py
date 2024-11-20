@@ -10,6 +10,7 @@ import numpy as np
     
 #init params
 WHEEL_DISTANCE = 0.102
+WHEEL_RADIUS = 0.035
 TOL_CURVE = 0.005
 TOL_ROTATE = 0.015
 FIXED_SPEED = 0.2    
@@ -18,6 +19,7 @@ FIXED_ROTATION_SPEED = 0.05 * math.pi / 4
     
 
 class XsecNavigator:
+    
     def __init__(self, move_straight_params, move_right_params, move_left_params):
         
         self.move_straight = Mission(
@@ -56,7 +58,7 @@ class XsecNavigator:
         )
 
     class Move:
-        def __init__(self, initial_pose, commands=[]):
+        def __init__(self, initial_pose=[], commands=[], update_rate = 60):
             """
             Initialize the Move class with initial pose and commands.
             Args:
@@ -70,8 +72,72 @@ class XsecNavigator:
             self.initial_yaw = tf.euler_from_quaternion([self.initial_pose.orientation.x, self.initial_pose.orientation.y, self.initial_pose.orientation.z, self.initial_pose.orientation.w])[2]
             self.all_commands_excecuted = False
             self.distance_traveled = 0
+            self.update_rate = update_rate
+            self.counter = 0
             
-        def get_wheel_cmd(self, cur_pose: Pose) -> WheelsCmdStamped:
+        def get_wheel_cmd(self) -> WheelsCmdStamped:
+            """
+            Calculate the wheel command based on the current pose and the target trajectory.
+            Args:
+                cur_pose (Pose): The current pose of the robot.
+            Returns:
+                WheelsCmdStamped: The command for the robot's wheels.
+            """
+            wheel_cmd = WheelsCmdStamped()
+            
+            if self.current_command_index >= len(self.commands):
+                # All commands have been executed, stop the robot
+                wheel_cmd.vel_left = 0
+                wheel_cmd.vel_right = 0
+                self.all_commands_excecuted = True
+                
+            else:
+                # Get the current command
+                current_command = self.commands[self.current_command_index]
+                command_type = current_command.type  
+                direction = current_command.direction  
+                distance = current_command.distance
+
+                if command_type == MotionCommand.Type.STRAIGHT:
+                    speed = FIXED_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_SPEED
+                    wheel_cmd.vel_left, wheel_cmd.vel_right = speed, speed
+                    
+                    traveled_distance = self.counter * self.update_rate * FIXED_SPEED * WHEEL_RADIUS
+
+                elif command_type == MotionCommand.Type.ROTATE:
+                    # Rotate the robot, either clockwise or counterclockwise
+                    angular_speed = FIXED_ROTATION_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_ROTATION_SPEED   # Example speed for rotation
+                    wheel_cmd.vel_left, wheel_cmd.vel_right = -angular_speed, angular_speed
+                    
+                    traveled_distance = FIXED_ROTATION_SPEED * WHEEL_RADIUS * WHEEL_DISTANCE * self.update_rate * self.counter
+                    
+                    
+                elif command_type == MotionCommand.Type.CURVE:
+                    # Move in a curve with a specified radius
+                    radius = current_command.radius
+                    sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
+                    wheel_cmd.vel_left = FIXED_ANGULAR_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius))) 
+                    wheel_cmd.vel_right = FIXED_ANGULAR_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius)))
+                    
+                    avg_ang_vel = (wheel_cmd.vel_right + wheel_cmd.vel_left)/ (2 * WHEEL_RADIUS)
+                    
+                    traveled_distance = avg_ang_vel * radius * self.update_rate * self.counter
+                    
+
+                if traveled_distance >= distance:
+                    #reinit
+                    traveled_distance = 0
+                    self.current_command_index += 1
+                    wheel_cmd.vel_left = 0
+                    wheel_cmd.vel_right = 0
+                else:
+                    self.counter += 1
+
+            return wheel_cmd
+        
+        
+        
+        def get_wheel_cmd_feedback(self, cur_pose: Pose) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.
             Args:
@@ -117,7 +183,7 @@ class XsecNavigator:
             return wheel_cmd
         
         
-        def move_straight(self, direction, cur_pose):
+        def move_straight_feedback(self, direction, cur_pose):
             # Move in a straight line, either forward or backward
             speed = FIXED_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_SPEED
             
@@ -128,7 +194,7 @@ class XsecNavigator:
             
             return speed, speed
         
-        def rotate(self, direction, cur_pose):
+        def rotate_feedback(self, direction, cur_pose):
             angular_speed = FIXED_ROTATION_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_ROTATION_SPEED   # Example speed for rotation
             
             # Convert quaternion to Euler angles (roll, pitch, yaw)
@@ -138,7 +204,7 @@ class XsecNavigator:
 
             return -angular_speed, angular_speed
         
-        def move_on_curve(self, direction, cur_pose, radius):
+        def move_on_curve_feedback(self, direction, cur_pose, radius):
             sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1 
             
             # get current and inital orientation
@@ -156,3 +222,4 @@ class XsecNavigator:
             else:
                 angle += 2*np.pi
             return angle
+

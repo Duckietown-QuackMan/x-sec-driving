@@ -12,6 +12,8 @@ sub: # Subscribed topics
   #-- xsec_nav
   pose: /gimpy/velocity_to_pose_node/pose
   flag: /quack_man/x_sec_go
+  ticks_left: /gimpy/left_wheel_encoder_node/tick
+  ticks_right: /gimpy/right_wheel_encoder_node/tick
   
   #-- xsec_det
   camera: /gimpy/camera_node/image/compressed
