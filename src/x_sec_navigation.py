@@ -159,6 +159,8 @@ class XsecNavigation:
         if msg.data == True:
             #get next mission
             path = random.randint(0,2)
+            
+            print("init ticks: ", self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
              
             if path == Path.STRAIGHT: 
                 print("Move straight")

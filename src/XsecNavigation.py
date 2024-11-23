@@ -159,7 +159,7 @@ class XsecNavigator:
             """
             wheel_cmd = WheelsCmdStamped()
             time = self.counter/self.update_rate
-            avg_traveled_ticks = -0.1 * ((self.init_tick[0] + self.init_tick[0])/2 - (ticks[0] + ticks[1])/2)
+            avg_traveled_ticks = -0.1 * ((self.init_tick[0] + self.init_tick[1])/2 - (ticks[0] + ticks[1])/2)
             print("traveled ticks: ", avg_traveled_ticks)
             
             
