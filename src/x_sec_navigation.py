@@ -25,14 +25,15 @@ except ModuleNotFoundError:
 
 from std_msgs.msg import Bool 
 
-WITH_FEEDBACK = 1
+WITH_FEEDBACK = 0
+WITH_TICKS = 1
 
 class XsecNavigation:
     
     def __init__(self):
 
         # set update rate
-        self.update_rate = 60
+        self.update_rate = 10 #Hz
         self.rate = rospy.Rate(self.update_rate)
 
         self.received_first_pose_msg = False
@@ -40,7 +41,13 @@ class XsecNavigation:
             self.cv_bridge = CvBridge()
             
         self.setup_params()
-        self.x_sec_navigator = XsecNavigator(self.move_straight_params, self.move_right_params, self.move_left_params)
+            
+        self.x_sec_navigator = XsecNavigator(
+            self.move_straight_params, 
+            self.move_right_params, 
+            self.move_left_params,
+            )
+        
         self.setup_publishers_and_subscribers()
         
 
@@ -52,14 +59,14 @@ class XsecNavigation:
         print()
         print()
 
-        # rospy.loginfo(
-        #         f"Waiting to receive messages from the topic {self.name_sub_tick_l_topic}"
-        #     )
+        rospy.loginfo(
+                f"Waiting to receive messages from the topic {self.name_sub_flag_topic}"
+            )
 
-        # while not self.sub_flag:
-        #     rospy.sleep(0.2)
+        while not self.sub_flag:
+            rospy.sleep(0.2)
 
-        # rospy.loginfo(f"Received topic {self.name_sub_pose_topic}!")
+        rospy.loginfo(f"Received topic {self.name_sub_flag_topic}!")
 
     
     def setup_params(self) -> None:
@@ -99,12 +106,14 @@ class XsecNavigation:
         self.sub_ticks_l = rospy.Subscriber(
             self.name_sub_tick_l_topic,
             WheelEncoderStamped,
+            self.tick_l_callback,
             queue_size=10,
         )
         
         self.sub_ticks_r = rospy.Subscriber(
             self.name_sub_tick_r_topic,
             WheelEncoderStamped,
+            self.tick_r_callback,
             queue_size=10,
         )
         
@@ -118,7 +127,7 @@ class XsecNavigation:
         self.pub_wheel_cmd = rospy.Publisher(
             self.name_pub_wheel_cmd_topic,
             WheelsCmdStamped,
-            queue_size=1,
+            queue_size=10,
         )
         
         self.pub_flag = rospy.Publisher(
@@ -127,25 +136,39 @@ class XsecNavigation:
             queue_size = 10
         )
         
-    def xsec_navigation_callback(self):
+    def tick_l_callback(self, msg):
+        self.sub_ticks_l_msg = msg
+        
+    def tick_r_callback(self, msg):
+        self.sub_ticks_r_msg = msg
+        
+    def xsec_navigation_callback(self, msg):
         #fake node
         # if self.cnt == 100:
         #     self.name_sub_flag_topic == True
         #     self.cnt = 0
+        wheel_cmd = WheelsCmdStamped()
         
-        if self.name_sub_flag_topic == True:
+        self.setup_params()
+        
+        rospy.loginfo(f"Waiting to receive messages from the topics {self.name_sub_tick_l_topic} and {self.name_sub_tick_r_topic} ")
+        while not self.sub_ticks_r and not self.sub_ticks_r:
+            rospy.sleep(0.2)
+        rospy.loginfo(f"Received topics {self.name_sub_tick_l_topic} and {self.name_sub_tick_r_topic}!")
+        
+        if msg.data == True:
             #get next mission
             path = random.randint(0,2)
              
             if path == Path.STRAIGHT: 
                 print("Move straight")
-                move = self.x_sec_navigator.Move(command=self.x_sec_navigator.move_straight, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l, self.sub_ticks_r))
+                move = self.x_sec_navigator.Move(command=self.x_sec_navigator.move_straight.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             elif Path.RIGHT: 
                 print("Move right")
-                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_right, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l, self.sub_ticks_r))
+                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_right.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             elif Path.LEFT:
                 print("Move left")
-                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_left, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l, self.sub_ticks_r))
+                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_left.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             else:
                 # Print an error message if conversion fails
                 print("Error: Invalid mission. Please enter a valid number.", file=sys.stderr)
@@ -155,12 +178,16 @@ class XsecNavigation:
             while not move.all_commands_excecuted:
                 
                 if WITH_FEEDBACK:
-                    wheel_cmd = self.move.get_wheel_cmd_feedback_ticks(self.sub_ticks_l, self.sub_ticks_r)
+                    wheel_cmd = move.get_wheel_cmd_feedback_ticks(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
+                elif WITH_TICKS:
+                    print(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
+                    wheel_cmd = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
                 else:
                     # calculate wheel cmd
-                    wheel_cmd = self.move.get_wheel_cmd()
+                    wheel_cmd = move.get_wheel_cmd()
                 self.pub_wheel_cmd.publish(wheel_cmd)
                 self.rate.sleep()
+                print("Driving ", wheel_cmd.vel_left, wheel_cmd.vel_right)
             
             print("Finished Path")
             self.pub_flag.publish(True)
@@ -171,6 +198,9 @@ class XsecNavigation:
             
         else: 
             print("... wait for xsec GO-command ...")
+            wheel_cmd.vel_left = 0
+            wheel_cmd.vel_right = 0
+            self.pub_wheel_cmd.publish(wheel_cmd)
             rospy.sleep(0.5)
             # self.cnt += 1
         

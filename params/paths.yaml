@@ -1,12 +1,12 @@
 straight:
-  distance: 55.0  # distance to marking + distance of tile
+  distance: 0.55  # distance to marking + distance of tile
 
 right:
-  radius: 10.5    
+  radius: 0.105    
   direction: 1    # clockwise
-  distance: 10.0  # distance before turn
+  distance: 0.1  # distance before turn
 
 left:
-  radius: 34.0    
+  radius: 0.34    
   direction: 0    # clockwise
-  distance: 10.0  # distance before turn
+  distance: 0.1  # distance before turn
