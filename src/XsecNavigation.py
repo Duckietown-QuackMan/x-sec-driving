@@ -9,13 +9,15 @@ import tf.transformations as tf
 import numpy as np
     
 #init params
-WHEEL_DISTANCE = 0.102
+WHEEL_DISTANCE = 0.102 #102
 WHEEL_RADIUS = 0.035
-TOL_CURVE = 0.005
+TOL_CURVE = 0.05
 TOL_ROTATE = 0.015
-FIXED_SPEED = 0.02 #m/s   
-FIXED_ANGULAR_SPEED = 0.02 #m/s
-FIXED_ROTATION_SPEED = 0.02 #m/s
+FIXED_SPEED = 0.25 #m/s   
+FIXED_ANGULAR_SPEED = 0.25 #m/s
+FIXED_ROTATION_SPEED = 0.25 #m/s
+
+WHEEL_TOL = 0.05
     
 
 class XsecNavigator:
@@ -31,6 +33,20 @@ class XsecNavigator:
                         ),
             ]
         )
+        # self.move_right = Mission(
+        #     name="move_right",
+        #     commands=[
+        #         Command(type=MotionCommand.Type.STRAIGHT, 
+        #                 distance=move_right_params["distance"],
+        #                 direction=MotionCommand.Direction.POSITIVE, 
+        #                 ),
+        #         Command(type=MotionCommand.Type.CURVE, 
+        #                 direction=MotionCommand.Direction.POSITIVE, 
+        #                 distance=np.pi/2,
+        #                 radius=move_right_params["radius"]
+        #                 ),
+        #     ]
+        # )
         self.move_right = Mission(
             name="move_right",
             commands=[
@@ -38,13 +54,26 @@ class XsecNavigator:
                         distance=move_right_params["distance"],
                         direction=MotionCommand.Direction.POSITIVE, 
                         ),
-                Command(type=MotionCommand.Type.CURVE, 
-                        direction=move_left_params["direction"], 
-                        distance=np.pi/2,
-                        radius=move_right_params["radius"]
+                Command(type=MotionCommand.Type.ROTATE, 
+                        direction=MotionCommand.Direction.POSITIVE, 
+                        distance=np.pi/2
                         ),
             ]
         )
+        # self.move_left = Mission(
+        #     name="move_left",
+        #     commands=[
+        #         Command(type=MotionCommand.Type.STRAIGHT, 
+        #                 distance=move_left_params["distance"],
+        #                 direction=MotionCommand.Direction.POSITIVE, 
+        #                 ),
+        #         Command(type=MotionCommand.Type.CURVE, 
+        #                 direction=MotionCommand.Direction.NEGATIVE, 
+        #                 distance=np.pi/2,
+        #                 radius=move_left_params["radius"]
+        #                 ),
+        #     ]
+        # )
         self.move_left = Mission(
             name="move_left",
             commands=[
@@ -52,10 +81,9 @@ class XsecNavigator:
                         distance=move_left_params["distance"],
                         direction=MotionCommand.Direction.POSITIVE, 
                         ),
-                Command(type=MotionCommand.Type.CURVE, 
-                        direction=move_left_params["direction"], 
+                Command(type=MotionCommand.Type.ROTATE, 
+                        direction=MotionCommand.Direction.NEGATIVE, 
                         distance=np.pi/2,
-                        radius=move_left_params["radius"]
                         ),
             ]
         )
@@ -101,10 +129,10 @@ class XsecNavigator:
             else:
                 # Get the current command
                 current_command = self.commands[self.current_command_index]
-                command_type = current_command.type  
-                direction = current_command.direction  
+                command_type = current_command.type.value  
+                direction = current_command.direction
                 distance = current_command.distance
-
+                print(command_type, direction)
                 if command_type == MotionCommand.Type.STRAIGHT:
                     print("Straight")
                     speed = FIXED_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_SPEED
@@ -124,16 +152,18 @@ class XsecNavigator:
                 elif command_type == MotionCommand.Type.CURVE:
                     print("Curve")
                     # Move in a curve with a specified radius
-                    radius = current_command.radius
+                    radius = current_command.radius 
                     sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
-                    wheel_cmd.vel_left = FIXED_ANGULAR_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius))) 
-                    wheel_cmd.vel_right = FIXED_ANGULAR_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius)))
+                    wheel_cmd.vel_left = FIXED_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius))) 
+                    wheel_cmd.vel_right = FIXED_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius)))
                     
-                    avg_ang_vel = (wheel_cmd.vel_right + wheel_cmd.vel_left)/2
+                    avg_vel = (wheel_cmd.vel_right + wheel_cmd.vel_left)/2
                     
-                    traveled_distance = avg_ang_vel * time / radius
+                    traveled_distance = avg_vel * time / radius
                     
                 print("traveled distance: ", round(traveled_distance,3),"   Distance: ", round(distance,3))
+                
+                
                 
                 if traveled_distance >= distance:
                     print("Command done")
@@ -159,7 +189,7 @@ class XsecNavigator:
             """
             wheel_cmd = WheelsCmdStamped()
             time = self.counter/self.update_rate
-            avg_traveled_ticks = -0.1 * ((self.init_tick[0] + self.init_tick[1])/2 - (ticks[0] + ticks[1])/2)
+            avg_traveled_ticks = -1 * ((self.init_tick[0] + self.init_tick[1])/2 - (ticks[0] + ticks[1])/2)
             print("traveled ticks: ", avg_traveled_ticks)
             
             
@@ -187,19 +217,20 @@ class XsecNavigator:
                 elif command_type == MotionCommand.Type.ROTATE:
                     print("Rotate")
                     # Rotate the robot, either clockwise or counterclockwise
-                    angular_speed = FIXED_ROTATION_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_ROTATION_SPEED   # Example speed for rotation
-                    wheel_cmd.vel_left, wheel_cmd.vel_right = -angular_speed, angular_speed
-                    
-                    traveled_distance = self.dist_per_tick / (WHEEL_DISTANCE/2) * avg_traveled_ticks
+                    sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
+                    wheel_cmd.vel_left = sign * FIXED_SPEED
+                    wheel_cmd.vel_right = -sign * FIXED_SPEED
+                    avg_traveled_ticks = sign * (self.init_tick[1]/2 - ticks[1]/2)
+                    traveled_distance = self.dist_per_tick * 2 / WHEEL_DISTANCE * avg_traveled_ticks
                     
                     
                 elif command_type == MotionCommand.Type.CURVE:
                     print("Curve")
                     # Move in a curve with a specified radius
-                    radius = current_command.radius
+                    radius = current_command.radius - TOL_CURVE
                     sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
-                    wheel_cmd.vel_left = FIXED_ANGULAR_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius))) 
-                    wheel_cmd.vel_right = FIXED_ANGULAR_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius)))
+                    wheel_cmd.vel_left = FIXED_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius))) 
+                    wheel_cmd.vel_right = FIXED_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius)))
                     
                     traveled_distance = self.dist_per_tick / radius * avg_traveled_ticks
                     
@@ -209,6 +240,7 @@ class XsecNavigator:
                     print("Command done")
                     #reinit
                     traveled_distance = 0
+                    self.init_tick = ticks
                     self.current_command_index += 1
                     wheel_cmd.vel_left = 0
                     wheel_cmd.vel_right = 0

@@ -64,7 +64,8 @@ class DistanceType(Enum):
     
 class Command:
     
-    def __init__(self, type: MotionCommand.Type = MotionCommand.Type.STRAIGHT,
+    def __init__(self, 
+    type: MotionCommand.Type = MotionCommand.Type.STRAIGHT,
     direction: Union[MotionCommand.Direction, None] = None,
     distance: float = 0.0,
     radius: Union[float, None] = None):

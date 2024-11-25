@@ -161,14 +161,13 @@ class XsecNavigation:
             path = random.randint(0,2)
             
             print("init ticks: ", self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
-             
-            if path == Path.STRAIGHT: 
+            if path == Path.STRAIGHT.value: 
                 print("Move straight")
-                move = self.x_sec_navigator.Move(command=self.x_sec_navigator.move_straight.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
-            elif Path.RIGHT: 
+                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_straight.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
+            elif path == Path.RIGHT.value: 
                 print("Move right")
                 move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_right.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
-            elif Path.LEFT:
+            elif path == Path.LEFT.value:
                 print("Move left")
                 move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_left.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             else:
