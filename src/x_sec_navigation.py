@@ -33,7 +33,7 @@ class XsecNavigation:
     def __init__(self):
 
         # set update rate
-        self.update_rate = 10 #Hz
+        self.update_rate = 50 #Hz
         self.rate = rospy.Rate(self.update_rate)
 
         self.received_first_pose_msg = False
@@ -159,7 +159,7 @@ class XsecNavigation:
         if msg.data == True:
             #get next mission
             path = random.randint(0,2)
-            
+            path = 1
             print("init ticks: ", self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
             if path == Path.STRAIGHT.value: 
                 print("Move straight")
@@ -179,7 +179,7 @@ class XsecNavigation:
             while not move.all_commands_excecuted:
                 
                 if WITH_FEEDBACK:
-                    wheel_cmd = move.get_wheel_cmd_feedback_ticks(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
+                    wheel_cmd = move.get_wheel_cmd_pose(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
                 elif WITH_TICKS:
                     print(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
                     wheel_cmd = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))

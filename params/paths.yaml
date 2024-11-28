@@ -6,5 +6,5 @@ right:
   distance: 0.15  # distance before turn
 
 left:
-  radius: 0.34    
-  distance: 0.3  # distance before turn
+  radius: 0.21    
+  distance: 0.15  # distance before turn
