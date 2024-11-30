@@ -40,12 +40,12 @@ graph TD
 Cross section tile
 
 ## Cross section detection 
-The detection algorithm of the crosssection tiles follows the process given in the table. It is fed by compressed rgb images from the front of the duckybot.
+The detection algorithm of the crosssection tiles follows the process given in the table. It is fed by compressed rgb-images from the front camera of the duckiebit.
 
 | **Step**                      | **Description**                                        | **Tuning Parameters**                                      |
-|-------------------------------|--------------------------------------------------------|------------------------------------------------------------|
-| Line detection |
-|-------------------------------|--------------------------------------------------------|------------------------------------------------------------|
+---
+| **Line detection** |
+---
 | 1. Crop Image                 | Remove unwanted parts of the image.                   | `top`, `bottom`, `left`, `right`                            |
 | 2. Smoothen Image             | Reduce noise and enhance edges using Gaussian blur.   | `ksize` (kernel size), `threshold`                          |
 | 3. Edge Detection             | Identify edges using the Canny algorithm.             | `low_threshold`, `high_threshold`                           |
@@ -54,9 +54,9 @@ The detection algorithm of the crosssection tiles follows the process given in t
 | 6. Color Filtering for Edges  | Extract edges of the red color.                       | `HSV_RANGES_RED_1`, `HSV_RANGES_RED_2`                      |
 | 7. Line Detection             | Detect line segments using Hough Line Transform.      | `rho`, `theta`, `threshold`, `minLineLength`, `maxLineGap`  |
 | 8. Projection to Ground Plane | Project detected lines to the ground using homography.| `H` (homography matrix), `offset_x`, `offset_y`             |
-|-------------------------------|--------------------------------------------------------|------------------------------------------------------------|
-| Evaluation |
-|-------------------------------|--------------------------------------------------------|------------------------------------------------------------|
+---
+| **Evaluation** |
+---
 | 1. Buffering Polygons                 | Convert detected lines to buffered polygons, and set their union. | `buffer_size`                           |
 | 2. Ground truth Polygon            | Define ground truth union.   | `polygon_width`, `polygon_heigth `                        |
 | 3. Score Area             | Define area at which detected lines are evaluated.  | `score_radius`                         |
@@ -86,8 +86,8 @@ During navigation driving the `x_sec_navigation` flag is the to true until the m
 ```mermaid
 graph TD
   encoded_ticks --> current_distance
-  ref_distance --> ((-))
-  curren_distance --> ((-)) --> C --> wheel_velocity --> Duckiebot --> encoded_ticks 
-  wheel_velocity --> ((*))
-  time --> ((*)) --> ref_distance
+  ref_distance --> C(-)
+  curren_distance --> C(-) --> Controller --> wheel_velocity --> Duckiebot --> encoded_ticks 
+  wheel_velocity --> C(*)
+  time --> C(*) --> ref_distance
 ```
