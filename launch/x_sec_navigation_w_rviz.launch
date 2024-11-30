@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+
+    <!-- Launch x_sec_navigation node  -->
+    <include file="$(find x_sec_driving)/launch/x_sec_navigation.launch"/>
+
+    <!-- Launch RViz  -->
+
+    <arg name="output" default="log"/> <!-- "log": print stderr only to screen; "screen": print stdout and stderr to screen -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find x_sec_driving)/rviz/x_sec_navigation.rviz" output="$(arg output)" />
+    
+</launch>
