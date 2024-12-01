@@ -99,7 +99,8 @@ class XsecNavigator:
         for mission in missions:
             
             trajectory = []
-            num_samples = 10 
+            sample_dist_m = 0.025 
+            sample_dist_rad = 0.2
             self.commands = mission.commands  # List of motion commands.
             self.current_command_index = 0  # Track which command is being executed.
             x_start = 0
@@ -111,18 +112,23 @@ class XsecNavigator:
                 command_type = current_command.type  
                 direction = current_command.direction  
                 distance = current_command.distance
-                t = np.linspace(0, distance, num_samples, startpoint=False)
-        
+                
                 if command_type == MotionCommand.Type.STRAIGHT:
-                    x_coord = np.zeros(t.shape())
+                    num_samples = int(distance/sample_dist_m)
+                    t = np.linspace(0, distance, num_samples)[1:]
+                    x_coord = np.zeros(t.size)
                     y_coord = t
                 elif command_type == MotionCommand.Type.ROTATE:
-                    x_coord = np.zeros(t.shape())
-                    y_coord = np.zeros(t.shape())
+                    num_samples = int(distance/sample_dist_rad)
+                    t = np.linspace(0, distance, num_samples)[1:]
+                    x_coord = np.zeros(t.size)
+                    y_coord = np.zeros(t.size)
                 elif command_type == MotionCommand.Type.CURVE:
-                    sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
+                    num_samples = int(distance/sample_dist_rad)
+                    t = np.linspace(0, distance, num_samples)[1:]
+                    sign = -1 if direction == MotionCommand.Direction.POSITIVE else 1
                     radius = current_command.radius
-                    x_coord = radius * sign * np.cos(t) - sign
+                    x_coord = radius * sign * (np.cos(t) - 1)
                     y_coord = radius * np.sin(t)
                 
                 #shift coordinates 
@@ -132,14 +138,15 @@ class XsecNavigator:
                 x_start = x_coord[-1]
                 y_start = y_coord[-1]
                 
-                trajectory.append(list(zip(x_coord, y_coord)))
+                trajectory.extend(list(zip(x_coord, y_coord)))
+                print(trajectory)
     
-            self.plot_trajectory(trajectory)
+            #self.plot_trajectory(trajectory)
             trajectories.append(trajectory)
         
         return trajectories
             
-    def plot_trajectory(trajectory):
+    def plot_trajectory(self, trajectory):
          
         # Plot original curve and equidistant points
         x, y = zip(*trajectory)  # Unpack points for plotting
