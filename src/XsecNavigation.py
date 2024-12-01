@@ -192,6 +192,10 @@ class XsecNavigator:
             self.current_ticks = [0, 0]
             self.flag_goal_l = False
             self.flag_goal_r = False
+            
+            
+            #traj
+            self.current_pose = (0, 0, 0)
         
         
         def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
@@ -310,6 +314,89 @@ class XsecNavigator:
             
             return self.wheel_vel_l, self.wheel_vel_r
         
+        def get_wheel_cmd_traj(self, ticks, end_coord) -> WheelsCmdStamped:
+            """
+            Calculate the wheel command based on the current pose and the target trajectory.
+            Args:
+                cur_pose (Pose): The current pose of the robot.
+            Returns:
+                WheelsCmdStamped: The command for the robot's wheels.
+            """
+            
+            wheel_cmd = WheelsCmdStamped()
+              
+            time = self.counter/self.update_rate
+            self.current_ticks[0] = ticks[0] - self.init_tick[0]
+            self.current_ticks[1] = ticks[1] - self.init_tick[1]
+            print("current ticks: ", self.current_ticks, " time: ", time)
+    
+            
+            max_wheel_speed = FIXED_SPEED  # Maximum wheel speed in rad/s
+            wheel_radius = WHEEL_RADIUS
+            wheel_base = WHEEL_DISTANCE
+        
+                
+            # Calculate the angle to the next point
+            dx = end_coord[0] - self.current_pose[0]
+            dy = end_coord[1] - self.current_pose[1]
+            target_theta = math.atan2(dy, dx)
+            
+            # Calculate the angular difference
+            delta_theta = target_theta - self.current_pose.theta
+            
+            # Normalize the delta_theta to the range [-pi, pi]
+            delta_theta = (delta_theta + math.pi) % (2 * math.pi) - math.pi
+            
+            # Compute wheel rotations for on-the-spot rotation
+            if abs(delta_theta) > 1e-6:  # If there's a significant rotation to perform
+                print("rotation")
+                duration = abs(delta_theta) * wheel_base / (2 * max_wheel_speed * wheel_radius)
+                
+                left_wheel_rotation = delta_theta * wheel_base / (2 * wheel_radius)
+                right_wheel_rotation = -left_wheel_rotation
+
+                left_wheel_speed = max_wheel_speed if delta_theta < 0 else -max_wheel_speed
+                right_wheel_speed = -left_wheel_speed
+                
+                kinematic_sequences.append(KinematicSequence(left_wheel_rotation, right_wheel_rotation, left_wheel_speed, right_wheel_speed, duration))
+
+            # Update the robot's orientation after the rotation
+            self.current_pose.theta = target_theta
+            
+            # Compute wheel rotations for straight-line movement
+            distance = math.sqrt(dx**2 + dy**2)
+            if distance > 1e-6:  # If there's a significant distance to move
+                print("distance")
+                duration = distance / (max_wheel_speed * wheel_radius)
+            
+                left_wheel_rotation = distance / wheel_radius
+                right_wheel_rotation = distance / wheel_radius
+                
+                left_wheel_speed = max_wheel_speed
+                right_wheel_speed = max_wheel_speed
+
+                kinematic_sequences.append(KinematicSequence(left_wheel_rotation, right_wheel_rotation, left_wheel_speed, right_wheel_speed, duration))
+            
+            # Update the robot's position after the translation
+            current_pose.update_pose(end_point[0], end_point[1], target_theta)
+            
+            # Optionally, handle final pose adjustment if there's a small remaining angular offset
+            final_theta = final_pose.theta
+            delta_theta = final_theta - current_pose.theta
+            delta_theta = (delta_theta + math.pi) % (2 * math.pi) - math.pi
+            
+            if abs(delta_theta) > 1e-6:  # Final orientation adjustment
+                print("adjust")
+                duration = abs(delta_theta) * wheel_base / (2 * max_wheel_speed * wheel_radius)
+                    
+                left_wheel_rotation = delta_theta * wheel_base / (2 * wheel_radius)
+                right_wheel_rotation = -left_wheel_rotation
+
+                left_wheel_speed = max_wheel_speed if delta_theta < 0 else -max_wheel_speed
+                right_wheel_speed = -left_wheel_speed
+                kinematic_sequences.append(KinematicSequence(left_wheel_rotation, right_wheel_rotation, left_wheel_speed, right_wheel_speed, duration))
+                
+            return kinematic_sequences
         
         def get_wheel_cmd_pose(self, cur_pose: Pose) -> WheelsCmdStamped:
             """
@@ -395,8 +482,7 @@ class XsecNavigator:
             else:
                 angle += 2*np.pi
             return angle
-
-
+        
         def get_wheel_cmd(self) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.

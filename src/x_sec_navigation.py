@@ -27,6 +27,7 @@ from std_msgs.msg import Bool
 
 WITH_FEEDBACK = 0
 WITH_TICKS = 1
+WITH_TRAJ = 1
 
 class XsecNavigation:
     
@@ -174,19 +175,23 @@ class XsecNavigation:
                 sys.exit(1)  # Exit with a non-zero code indicating an error
                 
             
-            while not move.all_commands_excecuted:
-                
-                if WITH_FEEDBACK: #TODO
-                    wheel_cmd = move.get_wheel_cmd_pose(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
-                elif WITH_TICKS:
-                    print(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
-                    wheel_cmd = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
-                else:
-                    # calculate wheel cmd
-                    wheel_cmd = move.get_wheel_cmd()
-                self.pub_wheel_cmd.publish(wheel_cmd)
-                self.rate.sleep()
-                print("Driving ", wheel_cmd.vel_left, wheel_cmd.vel_right)
+            if WITH_TRAJ:
+                self.PD_controller(move, self.x_sec_navigator.trajectories[path])
+            
+            else:
+                while not move.all_commands_excecuted:
+                    
+                    if WITH_FEEDBACK: #TODO
+                        wheel_cmd = move.get_wheel_cmd_pose((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
+                    elif WITH_TICKS:
+                        print(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
+                        wheel_cmd = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
+                    else:
+                        # calculate wheel cmd
+                        wheel_cmd = move.get_wheel_cmd()
+                    self.pub_wheel_cmd.publish(wheel_cmd)
+                    self.rate.sleep()
+                    print("Driving ", wheel_cmd.vel_left, wheel_cmd.vel_right)
             
             print("Finished Path")
             #switch to lane following
@@ -204,7 +209,24 @@ class XsecNavigation:
             
             rospy.sleep(0.5)
             # self.cnt += 1
+            
+            
+    def PD_controller(self, move, trajectory): 
         
+        pos_tol = 0.01
+        current_coord = np.array([0,0])
+        
+        for idx, coord in enumerate(trajectory):
+            
+            end_coord = np.array(coord)
+            while np.linalg.norm(current_coord, end_coord) >= pos_tol: 
+                
+                wheel_cmd, current_coord = move.get_wheel_cmd_traj((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), current_coord, end_coord) 
+                self.pub_wheel_cmd.publish(wheel_cmd)
+                self.rate.sleep()
+            
+                
+            
 if __name__ == "__main__":
     rospy.init_node("x_sec_detection", anonymous=True)
 
