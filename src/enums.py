@@ -83,3 +83,4 @@ class Mission:
     def __init__ (self, name: str, commands: List[Command]):
         self.name = name
         self.commands = commands
+        self.trajectory = None

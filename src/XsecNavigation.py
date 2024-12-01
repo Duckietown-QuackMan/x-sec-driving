@@ -2,6 +2,7 @@ from enums import MotionCommand, DistanceType, Mission, Command
 from dataclasses import dataclass
 from duckietown_msgs.msg import WheelsCmdStamped
 from geometry_msgs.msg import PoseStamped, Pose
+import matplotlib.pyplot as plt
 
 #extensions
 import math
@@ -87,6 +88,72 @@ class XsecNavigator:
         #                 ),
         #     ]
         # )
+        
+        self.trajectories = self.create_trajectory()
+    
+    def create_trajectory(self):
+        
+        missions = [self.move_straight, self.move_left, self.move_right]
+        trajectories = []
+    
+        for mission in missions:
+            
+            trajectory = []
+            num_samples = 10 
+            self.commands = mission.commands  # List of motion commands.
+            self.current_command_index = 0  # Track which command is being executed.
+            x_start = 0
+            y_start = 0 
+                    
+            # Get the current command
+            for current_command in self.commands:
+                
+                command_type = current_command.type  
+                direction = current_command.direction  
+                distance = current_command.distance
+                t = np.linspace(0, distance, num_samples, startpoint=False)
+        
+                if command_type == MotionCommand.Type.STRAIGHT:
+                    x_coord = np.zeros(t.shape())
+                    y_coord = t
+                elif command_type == MotionCommand.Type.ROTATE:
+                    x_coord = np.zeros(t.shape())
+                    y_coord = np.zeros(t.shape())
+                elif command_type == MotionCommand.Type.CURVE:
+                    sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
+                    radius = current_command.radius
+                    x_coord = radius * sign * np.cos(t) - sign
+                    y_coord = radius * np.sin(t)
+                
+                #shift coordinates 
+                x_coord += x_start
+                y_coord += y_start
+                #reinit 
+                x_start = x_coord[-1]
+                y_start = y_coord[-1]
+                
+                trajectory.append(list(zip(x_coord, y_coord)))
+    
+            self.plot_trajectory(trajectory)
+            trajectories.append(trajectory)
+        
+        return trajectories
+            
+    def plot_trajectory(trajectory):
+         
+        # Plot original curve and equidistant points
+        x, y = zip(*trajectory)  # Unpack points for plotting
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y, label="Original Curve", alpha=0.6)
+        plt.scatter(x, y, color="red", label="Equidistant Points", zorder=5)
+        plt.legend()
+        plt.axis("equal")
+        plt.title("Equidistant Points on a Curve")
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.show()
+    
+        
 
     class Move():
         def __init__(self, initial_pose=[], commands=[], update_rate=1, init_ticks=(), resolution=135):
