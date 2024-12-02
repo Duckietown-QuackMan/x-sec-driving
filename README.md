@@ -79,8 +79,8 @@ The decision-making in the crosssection navigation is handled randomly and can o
 - `radius`: only mandatory for a curve command. 
 At the current state the controller only handles forward driving. 
 
-The navigation driving is implemented with two indirect D-controller, one by each wheel. In a further step, the navigation could be switched to a PD controller. When the the end distance is reached up to a certain threshold, final fine-adjustments are done. 
-During navigation driving the `x_sec_navigation` flag is the to true until the mission is terminated, passing the command on to the state_controlle. 
+The navigation driving is implemented with distance reference controller, one by each wheel. When the end distance is reached up to a certain threshold, final fine-adjustments are done. 
+During navigation driving the `x_sec_navigation` flag is set to true until the mission is terminated, passing the command on to the state_controlle. 
 
 ```mermaid
 graph TD
