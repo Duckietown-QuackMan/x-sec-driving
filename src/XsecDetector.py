@@ -55,13 +55,6 @@ HSV_RANGES_YELLOW = [
 ]
 
 # colors in this range can be considered as red
-<<<<<<< HEAD
-HSV_RANGES_RED = [
-    (170, 70, 50),
-    (180, 255, 255),
-]
-
-=======
 # HSV_RANGES_RED_1 = [
 #     (165, 70, 500),
 #     (180, 255, 255),
@@ -77,7 +70,6 @@ HSV_RANGES_RED_2 = [
     (15, 255, 255),
 ]
 
->>>>>>> dev/brandesa
 # --- Functions for plotting
 def plot_tile_bev(
     tile: "Tile",
@@ -260,10 +252,7 @@ def get_segments_from_linestring(linestring: LineString) -> List[LineString]:
     for i in range(len(coords) - 1):
         point1 = coords[i]
         point2 = coords[i + 1]
-<<<<<<< HEAD
-=======
         
->>>>>>> dev/brandesa
         segment = LineString([point1, point2])
         line_segments.append(segment)
 
@@ -383,16 +372,10 @@ def plot_shapely_geometries(
 def evaluate(
     tile: "XSecTile",
     detected_ground_segment: List[Tuple[float, float, float, float]],
-<<<<<<< HEAD
-    buffer_size: float = 0.005,
-    score_radius: float = 0.3,
-    passing_threshold: float = 0.08,
-=======
     eval: bool,
     buffer_size: float = 0.005,
     score_radius: float = 0.20,
     passing_threshold: float = 0.06,
->>>>>>> dev/brandesa
 ) -> Tuple[float, np.ndarray]:
     """
     Evaluates the detected line segments against ground truth lane markings, calculating an Intersection over Union (IoU) score.
@@ -430,29 +413,11 @@ def evaluate(
     # Intersect the unions with the scoring circle
     gt = gt_union.intersection(circle)
     det = detection_union.intersection(circle)
-<<<<<<< HEAD
-    print("GT union [cm2]: ", gt.area * 1e2, " Det union [cm2]: ", det.area * 1e2)
-=======
     
->>>>>>> dev/brandesa
     # Calculate intersection and union areas for IoU
     inter = gt.intersection(det).area
     union = gt.union(det).area
     score = inter / float(union)
-<<<<<<< HEAD
-    print("Intersec [cm2]: ", inter * 1e2, " union [cm2]: ", union * 1e2)
-    print(score)
-
-    # Visualize the results for the current radius
-    bgr = plot_shapely_geometries(
-        [gt, det, circle],
-        colors=["blue", "yellow", "red"],
-        alphas=[0.8, 0.5, 0.8],
-        extra_info=f"R={score_radius}, IoU={score:.4f})"
-    )
-
-    passed = score >= passing_threshold
-=======
 
     # Visualize the results for the current radius
     if eval:
@@ -470,7 +435,6 @@ def evaluate(
     print("GT union [cm2]: ", round(gt.area * 1e2, 3), " Det union [cm2]: ", round(det.area * 1e2, 3))
     print("Intersec [cm2]: ", round(inter * 1e2, 3), " union [cm2]: ", round(union * 1e2, 3))
     print("Score: ", round(score,3), " Detected: ", passed)
->>>>>>> dev/brandesa
 
     return score, bgr, passed
 
@@ -489,13 +453,8 @@ def crop_image(img: np.ndarray) -> np.ndarray:
 
     top=200
     bottom=0
-<<<<<<< HEAD
-    left=80 
-    right=80
-=======
     left=0 
     right=0
->>>>>>> dev/brandesa
 
     return img[top:img.shape[0] - bottom, left:img.shape[1] - right]
 
@@ -529,11 +488,7 @@ def find_edges(img: np.ndarray) -> np.ndarray:
         np.ndarray: An image with edges highlighted (single-channel binary image).
     """
     low_threshold = 50
-<<<<<<< HEAD
-    high_threshold = 150
-=======
     high_threshold = 100
->>>>>>> dev/brandesa
     # Use the Canny edge detector
     edges = cv2.Canny(img, low_threshold, high_threshold)
     return edges
@@ -547,11 +502,7 @@ def dilate_edge_mask(edge_mask: np.ndarray) -> np.ndarray:
         np.ndarray: The dilated edge mask.
     """
 
-<<<<<<< HEAD
-    kernel_size = 7
-=======
     kernel_size = 5
->>>>>>> dev/brandesa
     iterations = 1
     # Create a square kernel of specified size
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
@@ -584,15 +535,10 @@ def color_dilated_edges(
 
 def edges_in_color_range(
     colored_edges: np.ndarray,
-<<<<<<< HEAD
-    low: Tuple[int, int, int],
-    high: Tuple[int, int, int],
-=======
     low1: Tuple[int, int, int],
     high1: Tuple[int, int, int],
     low2: Tuple[int, int, int],
     high2: Tuple[int, int, int],
->>>>>>> dev/brandesa
 ) -> np.ndarray:
     """
     Parameters:
@@ -608,16 +554,11 @@ def edges_in_color_range(
     hsv_image = cv2.cvtColor(colored_edges, cv2.COLOR_BGR2HSV)
     
     # Generate a binary mask where pixels within the color range are 255, and others are 0
-<<<<<<< HEAD
-    mask = cv2.inRange(hsv_image, low, high)
-    
-=======
     mask1 = cv2.inRange(hsv_image, low1, high1)
     mask2 = cv2.inRange(hsv_image, low2, high2)
 
     # Combine the two masks
     mask = cv2.bitwise_or(mask1, mask2)
->>>>>>> dev/brandesa
     return mask
 
 def detect_lines(edges: np.ndarray) -> List[np.ndarray]:
@@ -633,19 +574,11 @@ def detect_lines(edges: np.ndarray) -> List[np.ndarray]:
     # Use the Hough Line Transform to detect lines
     lines = cv2.HoughLinesP(
         edges,
-<<<<<<< HEAD
-        rho=10,                       # Distance resolution of the accumulator in pixels
-        theta= 1 * np.pi / 180,      # Angle resolution of the accumulator in radians
-        threshold=5,                  # Accumulator threshold for line detection
-        minLineLength=10,             # Minimum length of line. Shorter lines are rejected
-        maxLineGap=5                  # Maximum allowed gap between line segments to treat them as single line
-=======
         rho=5,                       # Distance resolution of the accumulator in pixels
         theta= np.pi / 180,      # Angle resolution of the accumulator in radians
         threshold=3,                  # Accumulator threshold for line detection
         minLineLength=10,             # Minimum length of line. Shorter lines are rejected
         maxLineGap=5                 # Maximum allowed gap between line segments to treat them as single line
->>>>>>> dev/brandesa
     )
 
     # --- keep following ---
@@ -674,11 +607,7 @@ def project_point_image_to_ground(H: np.ndarray, pixel_coord: Tuple[int, int]) -
 
     # Normalize to convert from homogeneous to Cartesian coordinates
     x_ground = ground_coord_homogeneous[0] / ground_coord_homogeneous[2]
-<<<<<<< HEAD
-    y_ground = ground_coord_homogeneous[1] / ground_coord_homogeneous[2]
-=======
     y_ground = ground_coord_homogeneous[1] / ground_coord_homogeneous[2] #correction due to side cropping
->>>>>>> dev/brandesa
 
     return x_ground, y_ground
 
@@ -746,11 +675,7 @@ def line_detection(image: np.ndarray) -> Tuple[List[Tuple[float, float, float, f
     colored_edges = color_dilated_edges(cropped_image, dilated_edges)
 
     # Step 6: Extract colored edges for red
-<<<<<<< HEAD
-    red_edges = edges_in_color_range(colored_edges, HSV_RANGES_RED[0], HSV_RANGES_RED[1])
-=======
     red_edges = edges_in_color_range(colored_edges, HSV_RANGES_RED_1[0], HSV_RANGES_RED_1[1], HSV_RANGES_RED_2[0], HSV_RANGES_RED_2[1])
->>>>>>> dev/brandesa
 
     # Step 7: Detect lines from the dilated edge mask
     red_lines = detect_lines(red_edges)
@@ -850,11 +775,7 @@ class Tile:
 
 class XSecTile():
     def __init__(self):
-<<<<<<< HEAD
-        self.x_sec_polygon : List[Polygon] = [Polygon(((0.15, -0.10), (0.15, 0.10), (0.20, 0.10), (0.20, -0.10), (0.15, -0.10)))]
-=======
         self.x_sec_polygon : List[Polygon] = [Polygon(((0.10, -0.10), (0.10, 0.10), (0.15, 0.10), (0.15, -0.10), (0.10, -0.10)))]
->>>>>>> dev/brandesa
         self.x_sec_color = (255, 0, 0)
     def markings(self) -> List[Tuple[Polygon, Tuple[int, int, int]]]:
         return (self.x_sec_polygon, self.x_sec_color)

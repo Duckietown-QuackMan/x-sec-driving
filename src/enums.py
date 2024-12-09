@@ -82,9 +82,5 @@ class Mission:
     """
     def __init__ (self, name: str, commands: List[Command]):
         self.name = name
-<<<<<<< HEAD
-        self.commands = commands
-=======
         self.commands = commands
         self.trajectory = None
->>>>>>> dev/brandesa

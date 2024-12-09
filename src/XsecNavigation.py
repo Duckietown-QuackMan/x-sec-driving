@@ -2,10 +2,7 @@ from enums import MotionCommand, DistanceType, Mission, Command
 from dataclasses import dataclass
 from duckietown_msgs.msg import WheelsCmdStamped
 from geometry_msgs.msg import PoseStamped, Pose
-<<<<<<< HEAD
-=======
 import matplotlib.pyplot as plt
->>>>>>> dev/brandesa
 
 #extensions
 import math
@@ -17,15 +14,9 @@ WHEEL_DISTANCE = 0.102 #102
 WHEEL_RADIUS = 0.035
 TOL_CURVE = 0.05
 TOL_ROTATE = 0.015
-<<<<<<< HEAD
-FIXED_SPEED = 0.25 #m/s   
-FIXED_ANGULAR_SPEED = 0.25 #m/s
-FIXED_ROTATION_SPEED = 0.25 #m/s
-=======
 FIXED_SPEED = 0.5 #m/s   
 FIXED_ANGULAR_SPEED = 0.5 #m/s
 FIXED_ROTATION_SPEED = 0.5 #m/s
->>>>>>> dev/brandesa
 
 WHEEL_TOL = 0.05
     
@@ -97,8 +88,6 @@ class XsecNavigator:
         #                 ),
         #     ]
         # )
-<<<<<<< HEAD
-=======
         
         self.trajectories = self.create_trajectory()
     
@@ -172,7 +161,6 @@ class XsecNavigator:
         plt.show()
     
         
->>>>>>> dev/brandesa
 
     class Move():
         def __init__(self, initial_pose=[], commands=[], update_rate=1, init_ticks=(), resolution=135):
@@ -204,13 +192,10 @@ class XsecNavigator:
             self.current_ticks = [0, 0]
             self.flag_goal_l = False
             self.flag_goal_r = False
-<<<<<<< HEAD
-=======
             
             
             #traj
             self.current_pose = (0, 0, 0)
->>>>>>> dev/brandesa
         
         
         def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
@@ -329,8 +314,6 @@ class XsecNavigator:
             
             return self.wheel_vel_l, self.wheel_vel_r
         
-<<<<<<< HEAD
-=======
         def get_wheel_cmd_traj(self, ticks, end_coord) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.
@@ -414,7 +397,6 @@ class XsecNavigator:
                 kinematic_sequences.append(KinematicSequence(left_wheel_rotation, right_wheel_rotation, left_wheel_speed, right_wheel_speed, duration))
                 
             return kinematic_sequences
->>>>>>> dev/brandesa
         
         def get_wheel_cmd_pose(self, cur_pose: Pose) -> WheelsCmdStamped:
             """
@@ -500,12 +482,7 @@ class XsecNavigator:
             else:
                 angle += 2*np.pi
             return angle
-<<<<<<< HEAD
-
-
-=======
         
->>>>>>> dev/brandesa
         def get_wheel_cmd(self) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.
