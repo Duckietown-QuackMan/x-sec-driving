@@ -14,9 +14,9 @@ WHEEL_DISTANCE = 0.102 #102
 WHEEL_RADIUS = 0.035
 TOL_CURVE = 0.05
 TOL_ROTATE = 0.015
-FIXED_SPEED = 0.5 #m/s   
-FIXED_ANGULAR_SPEED = 0.5 #m/s
-FIXED_ROTATION_SPEED = 0.5 #m/s
+FIXED_SPEED = 0.33 #m/s   
+FIXED_ANGULAR_SPEED = 0.33 #m/s
+FIXED_ROTATION_SPEED = 0.33 #m/s
 
 WHEEL_TOL = 0.05
     
@@ -61,20 +61,6 @@ class XsecNavigator:
         #                 ),
         #     ]
         # )
-        self.move_left = Mission(
-            name="move_left",
-            commands=[
-                Command(type=MotionCommand.Type.STRAIGHT, 
-                        distance=move_left_params["distance"],
-                        direction=MotionCommand.Direction.POSITIVE, 
-                        ),
-                Command(type=MotionCommand.Type.CURVE, 
-                        direction=MotionCommand.Direction.NEGATIVE, 
-                        distance=np.pi/2,
-                        radius=move_left_params["radius"]
-                        ),
-            ]
-        )
         # self.move_left = Mission(
         #     name="move_left",
         #     commands=[
@@ -82,12 +68,30 @@ class XsecNavigator:
         #                 distance=move_left_params["distance"],
         #                 direction=MotionCommand.Direction.POSITIVE, 
         #                 ),
-        #         Command(type=MotionCommand.Type.ROTATE, 
+        #         Command(type=MotionCommand.Type.CURVE, 
         #                 direction=MotionCommand.Direction.NEGATIVE, 
         #                 distance=np.pi/2,
+        #                 radius=move_left_params["radius"]
         #                 ),
         #     ]
         # )
+        self.move_left = Mission(
+            name="move_left",
+            commands=[
+                Command(type=MotionCommand.Type.STRAIGHT, 
+                        distance=move_left_params["distance"] + 0.2,
+                        direction=MotionCommand.Direction.POSITIVE, 
+                        ),
+                Command(type=MotionCommand.Type.ROTATE, 
+                        direction=MotionCommand.Direction.NEGATIVE, 
+                        distance=np.pi/2,
+                        ),
+                Command(type=MotionCommand.Type.STRAIGHT, 
+                        distance=move_left_params["distance"],
+                        direction=MotionCommand.Direction.POSITIVE, 
+                        ),
+            ]
+        )
         
         self.trajectories = self.create_trajectory()
     
@@ -230,13 +234,23 @@ class XsecNavigator:
 
                 if command_type == MotionCommand.Type.STRAIGHT:
                     print("Straight")
+                    end_distance = [distance, distance]
+                    dist_tol = 0.01
                     
                     self.goal_distance[0] += FIXED_SPEED/self.update_rate 
                     self.goal_distance[1] += FIXED_SPEED/self.update_rate 
                     self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
                     self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
-                    end_distance = [distance, distance]
-                    dist_tol = 0.01
+                    
+                    if self.flag_goal_r:
+                        wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.goal_distance[0], end_distance[1]])
+                    elif self.flag_goal_l:
+                        wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.goal_distance[1]])
+                    else:
+                        error = self.current_distance[0] - self.current_distance[1]
+                        wheel_cmd.vel_left = FIXED_SPEED
+                        wheel_cmd.vel_right = FIXED_SPEED + self.kp_r * error * 1e1
+                
 
                 elif command_type == MotionCommand.Type.ROTATE:
                     print("Rotate")
@@ -246,8 +260,10 @@ class XsecNavigator:
                     self.goal_distance[1] += -sign * FIXED_SPEED/self.update_rate 
                     self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
                     self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
-                    end_distance = [sign * distance * WHEEL_DISTANCE/2, -sign * distance * WHEEL_DISTANCE/2] #distance from rad to m
+                    end_distance = [sign * distance * WHEEL_DISTANCE/2, -sign * distance * (WHEEL_DISTANCE)/2] #distance from rad to m
                     dist_tol = 0.005
+                    
+                    
                        
                 elif command_type == MotionCommand.Type.CURVE:
                     print("Curve")
@@ -273,12 +289,12 @@ class XsecNavigator:
                 print("End distance: ", round(end_distance[0],3), round(end_distance[1],3))
                 
                 #control - switch between navigate and fine adjustment
-                if self.flag_goal_r:
-                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.goal_distance[0], end_distance[1]])
-                elif self.flag_goal_l:
-                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.goal_distance[1]])
-                else:
-                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller(self.goal_distance)
+                # if self.flag_goal_r:
+                #     wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.goal_distance[0], end_distance[1]])
+                # elif self.flag_goal_l:
+                #     wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.goal_distance[1]])
+                # else:
+                #     wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller(self.goal_distance)
                 
                 #check if final position is reached for left and right
                 if np.abs(self.current_distance[0] - end_distance[0]) < dist_tol:

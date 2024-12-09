@@ -43,126 +43,129 @@ homography:
 H = np.array(yaml.safe_load(YML_HOMOGRAPHY_GIMPY)['homography']).reshape(3, 3)
 
 # colors in this range can be considered as white
-HSV_RANGES_WHITE = [
+HSV_RANGES_WHITE_1 = [
     (0, 0, 150),
     (180, 100, 255),
 ]
 
 # colors in this range can be considered as yellow
-HSV_RANGES_YELLOW = [
-    (25, 140, 100),
-    (45, 255, 255),
-]
+# HSV_RANGES_YELLOW = [
+#     (25, 140, 100),
+#     (45, 255, 255),
+# ]
 
 # colors in this range can be considered as red
 # HSV_RANGES_RED_1 = [
-#     (165, 70, 500),
+#     (165, 140, 100),
 #     (180, 255, 255),
 # ]
+# HSV_RANGES_RED_1 = [
+#     (165, 70, 50),
+#     (180, 255, 255),
+# ]
+
 HSV_RANGES_RED_1 = [
+    (0, 140, 100),
+    (15, 255, 255),
+]
+HSV_RANGES_RED_2 = [
     (165, 140, 100),
     (180, 255, 255),
 ]
 
+# # --- Functions for plotting
+# def plot_tile_bev(
+#     tile: "Tile",
+#     extra_info: str = "",
+#     width_px: int = 640,
+#     height_px: int = 480,
+#     dpi: int = 100,
+#     only_show: bool = False,
+#     detected_white_segments: List[Tuple[float, float, float, float]] = [],
+#     detected_yellow_segments: List[Tuple[float, float, float, float]] = [],
+# ) -> Union[None, np.ndarray]:
+#     """
+#     Plots a top-down view (Bird's Eye View) of lane markings,
+#     optionally along with detected line segments.
 
-HSV_RANGES_RED_2 = [
-    (0, 70, 100),
-    (15, 255, 255),
-]
+#     Parameters:
+#         tile (Tile): A Tile object that contains lane markings.
+#         extra_info (str): Extra information to be appended to the plot title (default is "").
+#         width_px (int): The width of the plot in pixels (default is 640).
+#         height_px (int): The height of the plot in pixels (default is 480).
+#         dpi (int): The resolution of the plot in dots per inch (default is 100).
+#         only_show (bool): If True, shows the plot using plt.show(). If False, returns the image as an ndarray (default is False).
+#         detected_white_segments (List[Tuple[float, float, float, float]]): Detected white line segments to be plotted, where each segment is represented by (x1, y1, x2, y2).
+#         detected_yellow_segments (List[Tuple[float, float, float, float]]): Detected yellow line segments to be plotted, where each segment is represented by (x1, y1, x2, y2).
 
-# --- Functions for plotting
-def plot_tile_bev(
-    tile: "Tile",
-    extra_info: str = "",
-    width_px: int = 640,
-    height_px: int = 480,
-    dpi: int = 100,
-    only_show: bool = False,
-    detected_white_segments: List[Tuple[float, float, float, float]] = [],
-    detected_yellow_segments: List[Tuple[float, float, float, float]] = [],
-) -> Union[None, np.ndarray]:
-    """
-    Plots a top-down view (Bird's Eye View) of lane markings,
-    optionally along with detected line segments.
+#     Returns:
+#         Union[None, np.ndarray]: If only_show is True, returns None; otherwise, returns the image as a NumPy array.
+#     """
+#     # Create the figure and axis with the given dimensions
+#     fig, ax = plt.subplots(figsize=(width_px / dpi, height_px / dpi), dpi=dpi)
 
-    Parameters:
-        tile (Tile): A Tile object that contains lane markings.
-        extra_info (str): Extra information to be appended to the plot title (default is "").
-        width_px (int): The width of the plot in pixels (default is 640).
-        height_px (int): The height of the plot in pixels (default is 480).
-        dpi (int): The resolution of the plot in dots per inch (default is 100).
-        only_show (bool): If True, shows the plot using plt.show(). If False, returns the image as an ndarray (default is False).
-        detected_white_segments (List[Tuple[float, float, float, float]]): Detected white line segments to be plotted, where each segment is represented by (x1, y1, x2, y2).
-        detected_yellow_segments (List[Tuple[float, float, float, float]]): Detected yellow line segments to be plotted, where each segment is represented by (x1, y1, x2, y2).
+#     # Plot the tile lane markings (polygons) with corresponding colors
+#     for poly_w_bgr in tile.markings():
+#         poly, bgr = poly_w_bgr
+#         b, g, r = bgr
+#         rgb = (r, g, b)  # Convert BGR to RGB
+#         # Extract x and y coordinates from the polygon
+#         x, y = poly.exterior.xy
+#         # Plot the polygon, swapping x and y to adjust orientation
+#         ax.fill(np.array(y), np.array(x), alpha=1.0, color=np.array(rgb) / 255, edgecolor='black')
 
-    Returns:
-        Union[None, np.ndarray]: If only_show is True, returns None; otherwise, returns the image as a NumPy array.
-    """
-    # Create the figure and axis with the given dimensions
-    fig, ax = plt.subplots(figsize=(width_px / dpi, height_px / dpi), dpi=dpi)
+#     # Plot detected white segments in red
+#     legend_added = False
+#     for x1, y1, x2, y2 in detected_white_segments:
+#         if not legend_added:
+#             ax.plot([y1, y2], [x1, x2], color='red', linewidth=2, label="White Segments")
+#             legend_added = True
+#         else:
+#             ax.plot([y1, y2], [x1, x2], color='red', linewidth=2)
 
-    # Plot the tile lane markings (polygons) with corresponding colors
-    for poly_w_bgr in tile.markings():
-        poly, bgr = poly_w_bgr
-        b, g, r = bgr
-        rgb = (r, g, b)  # Convert BGR to RGB
-        # Extract x and y coordinates from the polygon
-        x, y = poly.exterior.xy
-        # Plot the polygon, swapping x and y to adjust orientation
-        ax.fill(np.array(y), np.array(x), alpha=1.0, color=np.array(rgb) / 255, edgecolor='black')
+#     # Plot detected yellow segments in blue
+#     legend_added = False
+#     for x1, y1, x2, y2 in detected_yellow_segments:
+#         if not legend_added:
+#             ax.plot([y1, y2], [x1, x2], color='blue', linewidth=2, label="Yellow Segments")
+#             legend_added = True
+#         else:
+#             ax.plot([y1, y2], [x1, x2], color='blue', linewidth=2)
 
-    # Plot detected white segments in red
-    legend_added = False
-    for x1, y1, x2, y2 in detected_white_segments:
-        if not legend_added:
-            ax.plot([y1, y2], [x1, x2], color='red', linewidth=2, label="White Segments")
-            legend_added = True
-        else:
-            ax.plot([y1, y2], [x1, x2], color='red', linewidth=2)
+#     # Add legend if any segments are plotted
+#     if len(detected_white_segments) or len(detected_yellow_segments):
+#         ax.legend()
 
-    # Plot detected yellow segments in blue
-    legend_added = False
-    for x1, y1, x2, y2 in detected_yellow_segments:
-        if not legend_added:
-            ax.plot([y1, y2], [x1, x2], color='blue', linewidth=2, label="Yellow Segments")
-            legend_added = True
-        else:
-            ax.plot([y1, y2], [x1, x2], color='blue', linewidth=2)
+#     # Set the background color to black
+#     ax.set_facecolor('black')
+#     # Set aspect ratio to be equal for accurate representation
+#     ax.set_aspect('equal')
 
-    # Add legend if any segments are plotted
-    if len(detected_white_segments) or len(detected_yellow_segments):
-        ax.legend()
+#     # Set axis labels and title
+#     ax.set_xlabel('Robot Baseline Y (left + / right -)')
+#     ax.set_ylabel('Robot Baseline X (forward +)')
+#     title = 'Top-Down View of Lane-markings'
+#     if extra_info:
+#         title += f" ({extra_info})"
+#     ax.set_title(title)
 
-    # Set the background color to black
-    ax.set_facecolor('black')
-    # Set aspect ratio to be equal for accurate representation
-    ax.set_aspect('equal')
+#     # Set symmetric bounds for the plot
+#     ax.set_xlim(-0.85, 0.85)  # Approximately covers the full tile area
+#     ax.set_ylim(0.0, 0.85)
 
-    # Set axis labels and title
-    ax.set_xlabel('Robot Baseline Y (left + / right -)')
-    ax.set_ylabel('Robot Baseline X (forward +)')
-    title = 'Top-Down View of Lane-markings'
-    if extra_info:
-        title += f" ({extra_info})"
-    ax.set_title(title)
+#     # Enable grid and invert the x-axis to point left
+#     plt.grid(True)
+#     plt.gca().invert_xaxis()
 
-    # Set symmetric bounds for the plot
-    ax.set_xlim(-0.85, 0.85)  # Approximately covers the full tile area
-    ax.set_ylim(0.0, 0.85)
-
-    # Enable grid and invert the x-axis to point left
-    plt.grid(True)
-    plt.gca().invert_xaxis()
-
-    # Show or return the plot as per the only_show parameter
-    if only_show:
-        plt.show()
-    else:
-        # Convert the figure to a NumPy array and return as BGR format for OpenCV
-        np_img = matplotlib_to_numpy(fig)
-        plt.close(fig)
-        ret = cv2.cvtColor(np_img, cv2.COLOR_RGB2BGR)
-        return ret
+#     # Show or return the plot as per the only_show parameter
+#     if only_show:
+#         plt.show()
+#     else:
+#         # Convert the figure to a NumPy array and return as BGR format for OpenCV
+#         np_img = matplotlib_to_numpy(fig)
+#         plt.close(fig)
+#         ret = cv2.cvtColor(np_img, cv2.COLOR_RGB2BGR)
+#         return ret
 
 def plot_lines(img: np.ndarray, lines: List[Tuple[int, int, int, int]], color_bgr: Tuple[int, int, int]) -> np.ndarray:
     """
@@ -374,8 +377,8 @@ def evaluate(
     detected_ground_segment: List[Tuple[float, float, float, float]],
     eval: bool,
     buffer_size: float = 0.005,
-    score_radius: float = 0.20,
-    passing_threshold: float = 0.06,
+    score_radius: float = 0.25,
+    passing_threshold: float = 0.015,
 ) -> Tuple[float, np.ndarray]:
     """
     Evaluates the detected line segments against ground truth lane markings, calculating an Intersection over Union (IoU) score.
@@ -432,9 +435,10 @@ def evaluate(
    
     passed = (score >= passing_threshold)
     
-    print("GT union [cm2]: ", round(gt.area * 1e2, 3), " Det union [cm2]: ", round(det.area * 1e2, 3))
-    print("Intersec [cm2]: ", round(inter * 1e2, 3), " union [cm2]: ", round(union * 1e2, 3))
-    print("Score: ", round(score,3), " Detected: ", passed)
+    # print("GT union [cm2]: ", round(gt.area * 1e2, 3), " Det union [cm2]: ", round(det.area * 1e2, 3))
+    # print("Intersec [cm2]: ", round(inter * 1e2, 3), " union [cm2]: ", round(union * 1e2, 3))
+    if passed:
+        print("Score: ", round(score,3))
 
     return score, bgr, passed
 
@@ -468,16 +472,37 @@ def smoothen_image(
     Returns:
         np.ndarray: The smoothened image (in BGR format).
     """
+    # ksize = 5
+    # threshold = 100
+    # # Apply Gaussian blur to the image
+    # smooth_img = cv2.GaussianBlur(img, (ksize, ksize), 0)
+    # # Convert the image to grayscale
+    # gray_img = cv2.cvtColor(smooth_img, cv2.COLOR_BGR2GRAY)
+    # # Apply binary thresholding to make it black and white
+    # _, bw_img = cv2.threshold(gray_img, threshold, 255, cv2.THRESH_BINARY)
+    
+    
     ksize = 5
-    threshold = 127
+
     # Apply Gaussian blur to the image
     smooth_img = cv2.GaussianBlur(img, (ksize, ksize), 0)
-    # Convert the image to grayscale
-    gray_img = cv2.cvtColor(smooth_img, cv2.COLOR_BGR2GRAY)
-    # Apply binary thresholding to make it black and white
-    _, bw_img = cv2.threshold(gray_img, threshold, 255, cv2.THRESH_BINARY)
 
-    return bw_img
+    # Convert the image to HSV color space
+    hsv_img = cv2.cvtColor(smooth_img, cv2.COLOR_BGR2HSV)
+
+    # Define HSV range for red
+    lower_red1 = np.array([0, 140, 100])  # Lower range for red
+    upper_red1 = np.array([15, 255, 255])
+    lower_red2 = np.array([165, 140, 100])  # Upper range for red
+    upper_red2 = np.array([180, 255, 255])
+
+    # Create red masks (two ranges for red hue wrapping around 0 degrees)
+    red_mask1 = cv2.inRange(hsv_img, lower_red1, upper_red1)
+    red_mask2 = cv2.inRange(hsv_img, lower_red2, upper_red2)
+    red_mask = cv2.bitwise_or(red_mask1, red_mask2)
+    br_img = cv2.bitwise_not(red_mask)
+
+    return br_img
 
 def find_edges(img: np.ndarray) -> np.ndarray:
     """
@@ -488,7 +513,7 @@ def find_edges(img: np.ndarray) -> np.ndarray:
         np.ndarray: An image with edges highlighted (single-channel binary image).
     """
     low_threshold = 50
-    high_threshold = 100
+    high_threshold = 150
     # Use the Canny edge detector
     edges = cv2.Canny(img, low_threshold, high_threshold)
     return edges
@@ -502,7 +527,7 @@ def dilate_edge_mask(edge_mask: np.ndarray) -> np.ndarray:
         np.ndarray: The dilated edge mask.
     """
 
-    kernel_size = 5
+    kernel_size = 15
     iterations = 1
     # Create a square kernel of specified size
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
@@ -574,11 +599,11 @@ def detect_lines(edges: np.ndarray) -> List[np.ndarray]:
     # Use the Hough Line Transform to detect lines
     lines = cv2.HoughLinesP(
         edges,
-        rho=5,                       # Distance resolution of the accumulator in pixels
-        theta= np.pi / 180,      # Angle resolution of the accumulator in radians
-        threshold=3,                  # Accumulator threshold for line detection
+        rho=10,                       # Distance resolution of the accumulator in pixels
+        theta= 2 * np.pi / 180,      # Angle resolution of the accumulator in radians
+        threshold=10,                  # Accumulator threshold for line detection
         minLineLength=10,             # Minimum length of line. Shorter lines are rejected
-        maxLineGap=5                 # Maximum allowed gap between line segments to treat them as single line
+        maxLineGap=50                 # Maximum allowed gap between line segments to treat them as single line
     )
 
     # --- keep following ---
@@ -671,7 +696,7 @@ def line_detection(image: np.ndarray) -> Tuple[List[Tuple[float, float, float, f
     # Step 4: Dilate the edge mask
     dilated_edges = dilate_edge_mask(edges)
     
-    # Step 5: Color Dilated edge mas
+    # Step 5: Color Dilated edge mask
     colored_edges = color_dilated_edges(cropped_image, dilated_edges)
 
     # Step 6: Extract colored edges for red
@@ -775,7 +800,7 @@ class Tile:
 
 class XSecTile():
     def __init__(self):
-        self.x_sec_polygon : List[Polygon] = [Polygon(((0.10, -0.10), (0.10, 0.10), (0.15, 0.10), (0.15, -0.10), (0.10, -0.10)))]
+        self.x_sec_polygon : List[Polygon] = [Polygon(((0.175, -0.10), (0.175, 0.10), (0.225, 0.10), (0.225, -0.10), (0.175, -0.10)))]
         self.x_sec_color = (255, 0, 0)
     def markings(self) -> List[Tuple[Polygon, Tuple[int, int, int]]]:
         return (self.x_sec_polygon, self.x_sec_color)

@@ -27,7 +27,7 @@ from std_msgs.msg import Bool
 
 WITH_FEEDBACK = 0
 WITH_TICKS = 1
-WITH_TRAJ = 1
+WITH_TRAJ = 0
 
 class XsecNavigation:
     
@@ -158,6 +158,8 @@ class XsecNavigation:
             self.pub_flag.publish(True)
             #get next mission
             path = random.randint(0,2)
+            
+            path = 0
             print("init ticks: ", self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
             if path == Path.STRAIGHT.value: 
                 print("Move straight")

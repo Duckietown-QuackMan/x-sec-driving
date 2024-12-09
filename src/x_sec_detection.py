@@ -28,9 +28,9 @@ class XsecDetection:
     def __init__(self):
 
         
-        self.callback_rate = 5
+        self.callback_rate = 20
         self.cnt = 0
-        self.evaluate = False
+        self.evaluate = True
         
         self.received_first_input_msg_image = False
         if CV_BRIDGE_AVAILABLE:
@@ -209,29 +209,32 @@ class XsecDetection:
         self.received_first_input_msg_image = True
 
         #sync callback
-        # if self.cnt % self.callback_rate == 0:
-        #     self.cnt = 0
+        if self.cnt % self.callback_rate == 0:
+            self.cnt = 0
             
-        input_msg_stamp = msg.header.stamp
-        input_bgr_image = cv2.imdecode(
-            np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
-            cv2.IMREAD_UNCHANGED,
-        )
+            input_msg_stamp = msg.header.stamp
+            input_bgr_image = cv2.imdecode(
+                np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
+                cv2.IMREAD_UNCHANGED,
+            )
 
-        lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
-        #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
-        four_way_x_sec = XSecTile()
-        score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines, self.evaluate)
-        self.publish_xsec_flag(x_sec_flag)
-        #x_sec_flag = False
-        
-        if self.evaluate: 
-            #plot lines on image
-            cropped_image_w_lines = plot_lines(cropped_image, lines, (0,0,255))
-            #publish
-            self.publish_line_masks(cropped_image_w_lines, input_msg_stamp)
-            self.publish_xsec_eval(eval, input_msg_stamp)
+            lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
+            #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
+            four_way_x_sec = XSecTile()
+            score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines, self.evaluate)
+            self.publish_xsec_flag(x_sec_flag)
             
+            if x_sec_flag:
+                self.cnt = 0
+            
+            if self.evaluate: 
+                #plot lines on image
+                cropped_image_w_lines = plot_lines(cropped_image, lines, (0,0,255))
+                #publish
+                self.publish_line_masks(cropped_image_w_lines, input_msg_stamp)
+                self.publish_xsec_eval(eval, input_msg_stamp)
+        
+        
             
 
 
