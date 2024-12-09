@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+
+    <!-- Launch x_sec_detection node  -->
+    <include file="$(find x_sec_driving)/launch/x_sec_detection_w_rqt.launch"/>
+    <include file="$(find x_sec_driving)/launch/x_sec_navigation.launch"/>
+    
+</launch>

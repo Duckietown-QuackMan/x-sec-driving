@@ -2,6 +2,10 @@ from enums import MotionCommand, DistanceType, Mission, Command
 from dataclasses import dataclass
 from duckietown_msgs.msg import WheelsCmdStamped
 from geometry_msgs.msg import PoseStamped, Pose
+<<<<<<< HEAD
+=======
+import matplotlib.pyplot as plt
+>>>>>>> dev/brandesa
 
 #extensions
 import math
@@ -13,9 +17,15 @@ WHEEL_DISTANCE = 0.102 #102
 WHEEL_RADIUS = 0.035
 TOL_CURVE = 0.05
 TOL_ROTATE = 0.015
+<<<<<<< HEAD
 FIXED_SPEED = 0.25 #m/s   
 FIXED_ANGULAR_SPEED = 0.25 #m/s
 FIXED_ROTATION_SPEED = 0.25 #m/s
+=======
+FIXED_SPEED = 0.5 #m/s   
+FIXED_ANGULAR_SPEED = 0.5 #m/s
+FIXED_ROTATION_SPEED = 0.5 #m/s
+>>>>>>> dev/brandesa
 
 WHEEL_TOL = 0.05
     
@@ -87,6 +97,82 @@ class XsecNavigator:
         #                 ),
         #     ]
         # )
+<<<<<<< HEAD
+=======
+        
+        self.trajectories = self.create_trajectory()
+    
+    def create_trajectory(self):
+        
+        missions = [self.move_straight, self.move_left, self.move_right]
+        trajectories = []
+    
+        for mission in missions:
+            
+            trajectory = []
+            sample_dist_m = 0.025 
+            sample_dist_rad = 0.2
+            self.commands = mission.commands  # List of motion commands.
+            self.current_command_index = 0  # Track which command is being executed.
+            x_start = 0
+            y_start = 0 
+                    
+            # Get the current command
+            for current_command in self.commands:
+                
+                command_type = current_command.type  
+                direction = current_command.direction  
+                distance = current_command.distance
+                
+                if command_type == MotionCommand.Type.STRAIGHT:
+                    num_samples = int(distance/sample_dist_m)
+                    t = np.linspace(0, distance, num_samples)[1:]
+                    x_coord = np.zeros(t.size)
+                    y_coord = t
+                elif command_type == MotionCommand.Type.ROTATE:
+                    num_samples = int(distance/sample_dist_rad)
+                    t = np.linspace(0, distance, num_samples)[1:]
+                    x_coord = np.zeros(t.size)
+                    y_coord = np.zeros(t.size)
+                elif command_type == MotionCommand.Type.CURVE:
+                    num_samples = int(distance/sample_dist_rad)
+                    t = np.linspace(0, distance, num_samples)[1:]
+                    sign = -1 if direction == MotionCommand.Direction.POSITIVE else 1
+                    radius = current_command.radius
+                    x_coord = radius * sign * (np.cos(t) - 1)
+                    y_coord = radius * np.sin(t)
+                
+                #shift coordinates 
+                x_coord += x_start
+                y_coord += y_start
+                #reinit 
+                x_start = x_coord[-1]
+                y_start = y_coord[-1]
+                
+                trajectory.extend(list(zip(x_coord, y_coord)))
+                print(trajectory)
+    
+            #self.plot_trajectory(trajectory)
+            trajectories.append(trajectory)
+        
+        return trajectories
+            
+    def plot_trajectory(self, trajectory):
+         
+        # Plot original curve and equidistant points
+        x, y = zip(*trajectory)  # Unpack points for plotting
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y, label="Original Curve", alpha=0.6)
+        plt.scatter(x, y, color="red", label="Equidistant Points", zorder=5)
+        plt.legend()
+        plt.axis("equal")
+        plt.title("Equidistant Points on a Curve")
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.show()
+    
+        
+>>>>>>> dev/brandesa
 
     class Move():
         def __init__(self, initial_pose=[], commands=[], update_rate=1, init_ticks=(), resolution=135):
@@ -118,6 +204,13 @@ class XsecNavigator:
             self.current_ticks = [0, 0]
             self.flag_goal_l = False
             self.flag_goal_r = False
+<<<<<<< HEAD
+=======
+            
+            
+            #traj
+            self.current_pose = (0, 0, 0)
+>>>>>>> dev/brandesa
         
         
         def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
@@ -236,6 +329,92 @@ class XsecNavigator:
             
             return self.wheel_vel_l, self.wheel_vel_r
         
+<<<<<<< HEAD
+=======
+        def get_wheel_cmd_traj(self, ticks, end_coord) -> WheelsCmdStamped:
+            """
+            Calculate the wheel command based on the current pose and the target trajectory.
+            Args:
+                cur_pose (Pose): The current pose of the robot.
+            Returns:
+                WheelsCmdStamped: The command for the robot's wheels.
+            """
+            
+            wheel_cmd = WheelsCmdStamped()
+              
+            time = self.counter/self.update_rate
+            self.current_ticks[0] = ticks[0] - self.init_tick[0]
+            self.current_ticks[1] = ticks[1] - self.init_tick[1]
+            print("current ticks: ", self.current_ticks, " time: ", time)
+    
+            
+            max_wheel_speed = FIXED_SPEED  # Maximum wheel speed in rad/s
+            wheel_radius = WHEEL_RADIUS
+            wheel_base = WHEEL_DISTANCE
+        
+                
+            # Calculate the angle to the next point
+            dx = end_coord[0] - self.current_pose[0]
+            dy = end_coord[1] - self.current_pose[1]
+            target_theta = math.atan2(dy, dx)
+            
+            # Calculate the angular difference
+            delta_theta = target_theta - self.current_pose.theta
+            
+            # Normalize the delta_theta to the range [-pi, pi]
+            delta_theta = (delta_theta + math.pi) % (2 * math.pi) - math.pi
+            
+            # Compute wheel rotations for on-the-spot rotation
+            if abs(delta_theta) > 1e-6:  # If there's a significant rotation to perform
+                print("rotation")
+                duration = abs(delta_theta) * wheel_base / (2 * max_wheel_speed * wheel_radius)
+                
+                left_wheel_rotation = delta_theta * wheel_base / (2 * wheel_radius)
+                right_wheel_rotation = -left_wheel_rotation
+
+                left_wheel_speed = max_wheel_speed if delta_theta < 0 else -max_wheel_speed
+                right_wheel_speed = -left_wheel_speed
+                
+                kinematic_sequences.append(KinematicSequence(left_wheel_rotation, right_wheel_rotation, left_wheel_speed, right_wheel_speed, duration))
+
+            # Update the robot's orientation after the rotation
+            self.current_pose.theta = target_theta
+            
+            # Compute wheel rotations for straight-line movement
+            distance = math.sqrt(dx**2 + dy**2)
+            if distance > 1e-6:  # If there's a significant distance to move
+                print("distance")
+                duration = distance / (max_wheel_speed * wheel_radius)
+            
+                left_wheel_rotation = distance / wheel_radius
+                right_wheel_rotation = distance / wheel_radius
+                
+                left_wheel_speed = max_wheel_speed
+                right_wheel_speed = max_wheel_speed
+
+                kinematic_sequences.append(KinematicSequence(left_wheel_rotation, right_wheel_rotation, left_wheel_speed, right_wheel_speed, duration))
+            
+            # Update the robot's position after the translation
+            current_pose.update_pose(end_point[0], end_point[1], target_theta)
+            
+            # Optionally, handle final pose adjustment if there's a small remaining angular offset
+            final_theta = final_pose.theta
+            delta_theta = final_theta - current_pose.theta
+            delta_theta = (delta_theta + math.pi) % (2 * math.pi) - math.pi
+            
+            if abs(delta_theta) > 1e-6:  # Final orientation adjustment
+                print("adjust")
+                duration = abs(delta_theta) * wheel_base / (2 * max_wheel_speed * wheel_radius)
+                    
+                left_wheel_rotation = delta_theta * wheel_base / (2 * wheel_radius)
+                right_wheel_rotation = -left_wheel_rotation
+
+                left_wheel_speed = max_wheel_speed if delta_theta < 0 else -max_wheel_speed
+                right_wheel_speed = -left_wheel_speed
+                kinematic_sequences.append(KinematicSequence(left_wheel_rotation, right_wheel_rotation, left_wheel_speed, right_wheel_speed, duration))
+                
+            return kinematic_sequences
+>>>>>>> dev/brandesa
         
         def get_wheel_cmd_pose(self, cur_pose: Pose) -> WheelsCmdStamped:
             """
@@ -321,8 +500,12 @@ class XsecNavigator:
             else:
                 angle += 2*np.pi
             return angle
+<<<<<<< HEAD
 
 
+=======
+        
+>>>>>>> dev/brandesa
         def get_wheel_cmd(self) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.

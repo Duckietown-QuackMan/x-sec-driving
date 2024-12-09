@@ -27,6 +27,10 @@ from std_msgs.msg import Bool
 
 WITH_FEEDBACK = 0
 WITH_TICKS = 1
+<<<<<<< HEAD
+=======
+WITH_TRAJ = 1
+>>>>>>> dev/brandesa
 
 class XsecNavigation:
     
@@ -143,10 +147,14 @@ class XsecNavigation:
         self.sub_ticks_r_msg = msg
         
     def xsec_navigation_callback(self, msg):
+<<<<<<< HEAD
         #fake node
         # if self.cnt == 100:
         #     self.name_sub_flag_topic == True
         #     self.cnt = 0
+=======
+
+>>>>>>> dev/brandesa
         wheel_cmd = WheelsCmdStamped()
         
         self.setup_params()
@@ -157,9 +165,16 @@ class XsecNavigation:
         rospy.loginfo(f"Received topics {self.name_sub_tick_l_topic} and {self.name_sub_tick_r_topic}!")
         
         if msg.data == True:
+<<<<<<< HEAD
             #get next mission
             path = random.randint(0,2)
             path = 1
+=======
+            #flag: true while navigating
+            self.pub_flag.publish(True)
+            #get next mission
+            path = random.randint(0,2)
+>>>>>>> dev/brandesa
             print("init ticks: ", self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
             if path == Path.STRAIGHT.value: 
                 print("Move straight")
@@ -176,6 +191,7 @@ class XsecNavigation:
                 sys.exit(1)  # Exit with a non-zero code indicating an error
                 
             
+<<<<<<< HEAD
             while not move.all_commands_excecuted:
                 
                 if WITH_FEEDBACK:
@@ -192,6 +208,32 @@ class XsecNavigation:
             
             print("Finished Path")
             self.pub_flag.publish(True)
+=======
+            if WITH_TRAJ:
+                self.PD_controller(move, self.x_sec_navigator.trajectories[path])
+            
+            else:
+                while not move.all_commands_excecuted:
+                    
+                    if WITH_FEEDBACK: #TODO
+                        wheel_cmd = move.get_wheel_cmd_pose((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
+                    elif WITH_TICKS:
+                        print(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
+                        wheel_cmd = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
+                    else:
+                        # calculate wheel cmd
+                        wheel_cmd = move.get_wheel_cmd()
+                    self.pub_wheel_cmd.publish(wheel_cmd)
+                    self.rate.sleep()
+                    print("Driving ", wheel_cmd.vel_left, wheel_cmd.vel_right)
+            
+            print("Finished Path")
+            #switch to lane following
+            self.pub_flag.publish(False)
+            wheel_cmd.vel_left = 0
+            wheel_cmd.vel_right = 0
+            self.pub_wheel_cmd.publish(wheel_cmd)
+>>>>>>> dev/brandesa
             
             #wait for state machine to set the flags
             self.name_sub_flag_topic == True
@@ -199,12 +241,36 @@ class XsecNavigation:
             
         else: 
             print("... wait for xsec GO-command ...")
+<<<<<<< HEAD
             wheel_cmd.vel_left = 0
             wheel_cmd.vel_right = 0
             self.pub_wheel_cmd.publish(wheel_cmd)
             rospy.sleep(0.5)
             # self.cnt += 1
         
+=======
+            
+            rospy.sleep(0.5)
+            # self.cnt += 1
+            
+            
+    def PD_controller(self, move, trajectory): 
+        
+        pos_tol = 0.01
+        current_coord = np.array([0,0])
+        
+        for idx, coord in enumerate(trajectory):
+            
+            end_coord = np.array(coord)
+            while np.linalg.norm(current_coord, end_coord) >= pos_tol: 
+                
+                wheel_cmd, current_coord = move.get_wheel_cmd_traj((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), current_coord, end_coord) 
+                self.pub_wheel_cmd.publish(wheel_cmd)
+                self.rate.sleep()
+            
+                
+            
+>>>>>>> dev/brandesa
 if __name__ == "__main__":
     rospy.init_node("x_sec_detection", anonymous=True)
 

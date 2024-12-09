@@ -6,14 +6,25 @@ pub: # Published topics
   #-- xsec_det
   red_lines_mask: /gimpy/xsec_detection/mask_red_lines/compressed
   xsec_eval: /gimpy/xsec_detection/xsec_eval/compressed
+<<<<<<< HEAD
   xsec_flag: /gimpy/xsec_detection/xsec_flag/bool
 
 sub: # Subscribed topics
   #-- xsec_nav
   pose: /gimpy/velocity_to_pose_node/pose
+=======
+  xsec_flag: /quack_man/x_sec
+
+sub: # Subscribed topics
+  #-- xsec_nav
+>>>>>>> dev/brandesa
   flag: /quack_man/x_sec_go
   ticks_left: /gimpy/left_wheel_encoder_node/tick
   ticks_right: /gimpy/right_wheel_encoder_node/tick
   
   #-- xsec_det
+<<<<<<< HEAD
   camera: /gimpy/camera_node/image/compressed
+=======
+  camera: /gimpy/camera_node/image/compressed
+>>>>>>> dev/brandesa

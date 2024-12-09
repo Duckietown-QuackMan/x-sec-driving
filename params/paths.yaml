@@ -3,8 +3,16 @@ straight:
 
 right:
   radius: 0.105    
+<<<<<<< HEAD
   distance: 0.15  # distance before turn
 
 left:
   radius: 0.21    
   distance: 0.15  # distance before turn
+=======
+  distance: 0.2  # distance before turn
+
+left:
+  radius: 0.21    
+  distance: 0.2  # distance before turn
+>>>>>>> dev/brandesa

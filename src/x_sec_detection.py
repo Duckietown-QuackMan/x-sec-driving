@@ -28,8 +28,14 @@ class XsecDetection:
     def __init__(self):
 
         
+<<<<<<< HEAD
         self.callback_rate = 25
         self.cnt = 0
+=======
+        self.callback_rate = 5
+        self.cnt = 0
+        self.evaluate = False
+>>>>>>> dev/brandesa
         
         self.received_first_input_msg_image = False
         if CV_BRIDGE_AVAILABLE:
@@ -88,25 +94,41 @@ class XsecDetection:
             self.name_sub_image_input_topic,
             CompressedImage,
             self.xsec_detection_callback,
+<<<<<<< HEAD
             queue_size=10,
+=======
+            queue_size=1,
+>>>>>>> dev/brandesa
         )
 
         self.pub_image_red_lines_mask = rospy.Publisher(
             self.name_pub_image_red_lines_mask_topic,
             CompressedImage,
+<<<<<<< HEAD
             queue_size=10,
+=======
+            queue_size=1,
+>>>>>>> dev/brandesa
         )
         
         self.pub_image_red_xsec_eval = rospy.Publisher(
             self.name_pub_image_xsec_eval_topic,
             CompressedImage,
+<<<<<<< HEAD
             queue_size=10,
+=======
+            queue_size=1,
+>>>>>>> dev/brandesa
         )
         
         self.pub_bool_xsec_flag = rospy.Publisher(
             self.name_pub_bool_xsec_flag,
             Bool,
+<<<<<<< HEAD
             queue_size=10,
+=======
+            queue_size=1,
+>>>>>>> dev/brandesa
         )
 
     def validate_mask_shapes(
@@ -206,6 +228,7 @@ class XsecDetection:
 
         self.cnt += 1
         self.received_first_input_msg_image = True
+<<<<<<< HEAD
         #sync callback
         if self.cnt % self.callback_rate == 0:
             self.cnt = 0
@@ -219,16 +242,43 @@ class XsecDetection:
             lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
             #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
             
+=======
+
+        #sync callback
+        # if self.cnt % self.callback_rate == 0:
+        #     self.cnt = 0
+            
+        input_msg_stamp = msg.header.stamp
+        input_bgr_image = cv2.imdecode(
+            np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
+            cv2.IMREAD_UNCHANGED,
+        )
+
+        lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
+        #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
+        four_way_x_sec = XSecTile()
+        score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines, self.evaluate)
+        self.publish_xsec_flag(x_sec_flag)
+        #x_sec_flag = False
+        
+        if self.evaluate: 
+>>>>>>> dev/brandesa
             #plot lines on image
             cropped_image_w_lines = plot_lines(cropped_image, lines, (0,0,255))
             #publish
             self.publish_line_masks(cropped_image_w_lines, input_msg_stamp)
+<<<<<<< HEAD
             
             four_way_x_sec = XSecTile()
             score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines)
     
             self.publish_xsec_eval(eval, input_msg_stamp)
             self.publish_xsec_flag(x_sec_flag)
+=======
+            self.publish_xsec_eval(eval, input_msg_stamp)
+            
+            
+>>>>>>> dev/brandesa
 
 
 if __name__ == "__main__":
