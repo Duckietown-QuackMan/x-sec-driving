@@ -3,6 +3,7 @@ import numpy as np
 import yaml
 import matplotlib.pyplot as plt
 import os
+import rospy
 import json
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from shapely.geometry import (
@@ -438,7 +439,7 @@ def evaluate(
     # print("GT union [cm2]: ", round(gt.area * 1e2, 3), " Det union [cm2]: ", round(det.area * 1e2, 3))
     # print("Intersec [cm2]: ", round(inter * 1e2, 3), " union [cm2]: ", round(union * 1e2, 3))
     if passed:
-        print("Score: ", round(score,3))
+        rospy.loginfo(f"Score: {round(score,3)}")
 
     return score, bgr, passed
 

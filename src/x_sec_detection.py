@@ -72,12 +72,13 @@ class XsecDetection:
                 raise KeyError(txt_error)
             return param
 
+        # variable params
+        self.vehicle_name = rospy.get_param("~vehicle_name")
+
         # topics params
-        self.name_sub_image_input_topic = get_rosparam("~topics/sub/camera")
-        self.name_pub_image_red_lines_mask_topic = get_rosparam(
-            "~topics/pub/red_lines_mask"
-        )
-        self.name_pub_image_xsec_eval_topic = get_rosparam("~topics/pub/xsec_eval")
+        self.name_sub_image_input_topic = self.vehicle_name + get_rosparam("~topics/sub/camera")
+        self.name_pub_image_red_lines_mask_topic = self.vehicle_name + get_rosparam("~topics/pub/red_lines_mask")
+        self.name_pub_image_xsec_eval_topic = self.vehicle_name + get_rosparam("~topics/pub/xsec_eval")
         self.name_pub_bool_xsec_flag = get_rosparam("~topics/pub/xsec_flag")
 
     def setup_publishers_and_subscribers(self) -> None:
@@ -223,6 +224,10 @@ class XsecDetection:
             four_way_x_sec = XSecTile()
             score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines, self.evaluate)
             self.publish_xsec_flag(x_sec_flag)
+            if x_sec_flag:
+                rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
+                rospy.loginfo(f"score: {score}")
+
             
             if x_sec_flag:
                 self.cnt = 0

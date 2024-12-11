@@ -85,14 +85,14 @@ class XsecNavigation:
             return param
 
         # paths params
-        
+        self.vehicle_name = get_rosparam("~vehicle_name")
         #--sub
         self.name_sub_flag_topic = get_rosparam("~topics/sub/flag")
-        self.name_sub_tick_l_topic = get_rosparam('~topics/sub/ticks_left')
-        self.name_sub_tick_r_topic = get_rosparam('~topics/sub/ticks_right')
+        self.name_sub_tick_l_topic = self.vehicle_name + get_rosparam('~topics/sub/ticks_left')
+        self.name_sub_tick_r_topic = self.vehicle_name + get_rosparam('~topics/sub/ticks_right')
         #--pub
         self.name_pub_flag_topic = get_rosparam("~topics/pub/flag")
-        self.name_pub_wheel_cmd_topic = get_rosparam("~topics/pub/wheels_cmd")
+        self.name_pub_wheel_cmd_topic = self.vehicle_name + get_rosparam("~topics/pub/wheels_cmd")
         
         #path params
         self.move_straight_params = get_rosparam("~paths/straight")

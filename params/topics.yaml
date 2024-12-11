@@ -1,18 +1,18 @@
 pub: # Published topics
   #-- xsec_nav
-  wheels_cmd: /gimpy/wheels_driver_node/wheels_cmd
+  wheels_cmd: /wheels_driver_node/wheels_cmd # add vehicle name
   flag: /quack_man/x_sec_navigating
   
   #-- xsec_det
-  red_lines_mask: /gimpy/xsec_detection/mask_red_lines/compressed
-  xsec_eval: /gimpy/xsec_detection/xsec_eval/compressed
+  red_lines_mask: /xsec_detection/mask_red_lines/compressed # add vehicle name
+  xsec_eval: /xsec_detection/xsec_eval/compressed # add vehicle name
   xsec_flag: /quack_man/x_sec
 
 sub: # Subscribed topics
   #-- xsec_nav
   flag: /quack_man/x_sec_go
-  ticks_left: /gimpy/left_wheel_encoder_node/tick
-  ticks_right: /gimpy/right_wheel_encoder_node/tick
+  ticks_left: /left_wheel_encoder_node/tick # add vehicle name
+  ticks_right: /right_wheel_encoder_node/tick # add vehicle name
   
   #-- xsec_det
-  camera: /gimpy/camera_node/image/compressed
+  camera: /camera_node/image/compressed # add vehicle name

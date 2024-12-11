@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <launch>
+    <arg name="vehicle_name" default="$(env VEHICLE_NAME)" />
+    <param name="~vehicle_name" value="$(arg vehicle_name)" />
 
     <!-- Define the /use_sim_time parameter -->
     <arg name="use_sim_time" default="false"/>
