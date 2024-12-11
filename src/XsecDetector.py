@@ -70,7 +70,7 @@ HSV_RANGES_RED_1 = [
     (15, 255, 255),
 ]
 HSV_RANGES_RED_2 = [
-    (165, 140, 100),
+    (165, 70, 50),
     (180, 255, 255),
 ]
 
@@ -473,37 +473,16 @@ def smoothen_image(
     Returns:
         np.ndarray: The smoothened image (in BGR format).
     """
-    # ksize = 5
-    # threshold = 100
-    # # Apply Gaussian blur to the image
-    # smooth_img = cv2.GaussianBlur(img, (ksize, ksize), 0)
-    # # Convert the image to grayscale
-    # gray_img = cv2.cvtColor(smooth_img, cv2.COLOR_BGR2GRAY)
-    # # Apply binary thresholding to make it black and white
-    # _, bw_img = cv2.threshold(gray_img, threshold, 255, cv2.THRESH_BINARY)
-    
-    
     ksize = 5
-
+    threshold = 100
     # Apply Gaussian blur to the image
     smooth_img = cv2.GaussianBlur(img, (ksize, ksize), 0)
+    # Convert the image to grayscale
+    gray_img = cv2.cvtColor(smooth_img, cv2.COLOR_BGR2GRAY)
+    # Apply binary thresholding to make it black and white
+    _, bw_img = cv2.threshold(gray_img, threshold, 255, cv2.THRESH_BINARY)
 
-    # Convert the image to HSV color space
-    hsv_img = cv2.cvtColor(smooth_img, cv2.COLOR_BGR2HSV)
-
-    # Define HSV range for red
-    lower_red1 = np.array([0, 140, 100])  # Lower range for red
-    upper_red1 = np.array([15, 255, 255])
-    lower_red2 = np.array([165, 140, 100])  # Upper range for red
-    upper_red2 = np.array([180, 255, 255])
-
-    # Create red masks (two ranges for red hue wrapping around 0 degrees)
-    red_mask1 = cv2.inRange(hsv_img, lower_red1, upper_red1)
-    red_mask2 = cv2.inRange(hsv_img, lower_red2, upper_red2)
-    red_mask = cv2.bitwise_or(red_mask1, red_mask2)
-    br_img = cv2.bitwise_not(red_mask)
-
-    return br_img
+    return bw_img
 
 def find_edges(img: np.ndarray) -> np.ndarray:
     """
@@ -710,6 +689,40 @@ def line_detection(image: np.ndarray) -> Tuple[List[Tuple[float, float, float, f
     projected_red_lines = project_segments_image_to_ground(H, red_lines, offset_y=180)
 
     return red_edges, red_lines, projected_red_lines, cropped_image
+
+
+def redline_detection(
+    img: np.ndarray,
+    threshold: float = 400000,
+    ) -> np.array:
+    """
+    Parameters:
+        img (np.ndarray): The input image to be cropped.
+
+    Returns:
+        float: score of redline detection in image
+    """
+    
+    top = 350
+    bottom = 0
+    left = 50 
+    right = 0
+    
+    #crop the image
+    cropped_image = img[top:(img.shape[0] - bottom), left:(img.shape[1]- right)]
+    # Convert the BGR image to HSV color space
+    hsv_image = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2HSV)
+    # Create red masks (two ranges for red hue wrapping around 0 degrees)
+    red_mask1 = cv2.inRange(hsv_image, HSV_RANGES_RED_1[0], HSV_RANGES_RED_1[1])
+    red_mask2 = cv2.inRange(hsv_image, HSV_RANGES_RED_2[0], HSV_RANGES_RED_2[1])
+    red_mask = cv2.bitwise_or(red_mask1, red_mask2)
+    
+    if np.sum(red_mask) > threshold:
+        rospy.loginfo(f"RED detection {np.sum(red_mask)}")
+        return True, hsv_image
+    
+    return False , hsv_image
+
 
 # --- Data structure to hold input data and ground truth
 class Tile:

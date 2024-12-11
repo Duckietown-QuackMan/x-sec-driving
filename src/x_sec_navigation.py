@@ -177,7 +177,7 @@ class XsecNavigation:
                 
             
             if WITH_TRAJ:
-                self.PD_controller(move, self.x_sec_navigator.trajectories[path])
+                self.traj_controller(move, self.x_sec_navigator.trajectories[path])
             
             else:
                 while not move.all_commands_excecuted:
@@ -212,7 +212,7 @@ class XsecNavigation:
             # self.cnt += 1
             
             
-    def PD_controller(self, move, trajectory): 
+    def traj_controller(self, move, trajectory): 
         
         pos_tol = 0.01
         current_coord = np.array([0,0])
