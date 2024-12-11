@@ -22,6 +22,12 @@ from XsecDetector import (
     evaluate
     )
 
+from threading import Lock
+
+mutex = Lock()
+
+
+
 
 class XsecDetection:
 
@@ -30,7 +36,10 @@ class XsecDetection:
         
         self.callback_rate = 20
         self.cnt = 0
+        self.red_start_time = None
         self.evaluate = True
+        self.is_running = False
+
         
         self.received_first_input_msg_image = False
         if CV_BRIDGE_AVAILABLE:
@@ -205,39 +214,84 @@ class XsecDetection:
         Args:
             msg (CompressedImage): input image message
         """
+        with mutex:
+            if(self.is_running):
+                return
+            self.is_running = True
+        if self.red_start_time is None:
+            self.red_start_time = rospy.Time.now()
+        else:
+            if rospy.Time.now() - self.red_start_time < rospy.Duration.from_sec(0.5):
+                return
+            else:
+                self.red_start_time = rospy.Time.now()
+
 
         self.cnt += 1
         self.received_first_input_msg_image = True
 
-        #sync callback
-        if self.cnt % self.callback_rate == 0:
-            self.cnt = 0
-            
-            input_msg_stamp = msg.header.stamp
-            input_bgr_image = cv2.imdecode(
-                np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
-                cv2.IMREAD_UNCHANGED,
-            )
+        input_msg_stamp = msg.header.stamp
+        input_bgr_image = cv2.imdecode(
+            np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
+            cv2.IMREAD_UNCHANGED,
+        )
 
-            lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
-            #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
-            four_way_x_sec = XSecTile()
-            score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines, self.evaluate)
-            self.publish_xsec_flag(x_sec_flag)
-            if x_sec_flag:
-                rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
-                rospy.loginfo(f"score: {score}")
+        rospy.loginfo(f"Detection Callback, image timestampe: {input_msg_stamp.to_sec()}, diff={rospy.Time.now() - input_msg_stamp}")
+
+        lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
+        #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
+        four_way_x_sec = XSecTile()
+        score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines, self.evaluate)
+        self.publish_xsec_flag(x_sec_flag)
+        if x_sec_flag:
+            rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
+            rospy.loginfo(f"score: {score}")
+
+        
+        # if x_sec_flag:
+        #     self.cnt = 0
+        
+        if self.evaluate: 
+            #plot lines on image
+            cropped_image_w_lines = plot_lines(cropped_image, lines, (0,0,255))
+            #publish
+            self.publish_line_masks(cropped_image_w_lines, input_msg_stamp)
+            self.publish_xsec_eval(eval, input_msg_stamp)
+        with mutex:
+            self.is_running = False
+
+        # self.cnt += 1
+
+        # #sync callback
+        # if self.cnt % self.callback_rate == 0:
+        #     self.cnt = 0
+            
+        #     input_msg_stamp = msg.header.stamp
+        #     input_bgr_image = cv2.imdecode(
+        #         np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
+        #         cv2.IMREAD_UNCHANGED,
+        #     )
+
+        #     lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
+        #     #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
+        #     four_way_x_sec = XSecTile()
+        #     score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines, self.evaluate)
+        #     self.publish_xsec_flag(x_sec_flag)
+        #     if x_sec_flag:
+        #         rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
+        #         rospy.loginfo(f"score: {score}")
 
             
-            if x_sec_flag:
-                self.cnt = 0
+        #     if x_sec_flag:
+        #         self.cnt = 0
             
-            if self.evaluate: 
-                #plot lines on image
-                cropped_image_w_lines = plot_lines(cropped_image, lines, (0,0,255))
-                #publish
-                self.publish_line_masks(cropped_image_w_lines, input_msg_stamp)
-                self.publish_xsec_eval(eval, input_msg_stamp)
+        #     if self.evaluate: 
+        #         #plot lines on image
+        #         cropped_image_w_lines = plot_lines(cropped_image, lines, (0,0,255))
+        #         #publish
+        #         self.publish_line_masks(cropped_image_w_lines, input_msg_stamp)
+        #         self.publish_xsec_eval(eval, input_msg_stamp)
+
         
         
             
