@@ -23,6 +23,12 @@ from XsecDetector import (
     evaluate
     )
 
+from threading import Lock
+
+mutex = Lock()
+
+
+
 
 
 class XsecDetection:
