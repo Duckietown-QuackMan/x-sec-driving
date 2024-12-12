@@ -1,10 +1,8 @@
 straight:
-  distance: 0.75  # distance to marking + distance of tile
+  distance: 0.4  # distance to marking + distance of tile
 
-right:
-  radius: 0.105    
+right:   
   distance: 0.2  # distance before turn
 
-left:
-  radius: 0.2 #0.21    
-  distance: 0.4 #0.2  # distance before turn
+left:   
+  distance: 0.3  # distance before turn
