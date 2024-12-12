@@ -202,6 +202,8 @@ class XsecDetection:
         flag: np.bool
     ) -> None:
         self.pub_bool_xsec_flag.publish(flag)
+        
+        
 
     def xsec_detection_callback(self, msg: CompressedImage) -> None:
         """
@@ -224,7 +226,9 @@ class XsecDetection:
             
             
             if self.pixel_detect:
-                #Detect redlines in town through pixel count
+                """
+                Detect redlines in town through pixel count
+                """
                 img = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
                 x_sec_flag, img = redline_detection(img)
                 self.publish_xsec_flag(x_sec_flag)
@@ -238,7 +242,9 @@ class XsecDetection:
 
 
             else:
-                #Detect redlines over intersection of detected polygons
+                """
+                Detect redlines over intersection of detected polygons
+                """
                 input_msg_stamp = msg.header.stamp
                 input_bgr_image = cv2.imdecode(
                     np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
@@ -246,7 +252,6 @@ class XsecDetection:
                 )
 
                 lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
-                #self.validate_mask_shapes(input_bgr_image, lines_mask.astype(np.bool_))
                 four_way_x_sec = XSecTile()
                 score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines, self.evaluate)
                 self.publish_xsec_flag(x_sec_flag)

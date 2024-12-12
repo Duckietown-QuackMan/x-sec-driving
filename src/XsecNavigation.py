@@ -202,7 +202,7 @@ class XsecNavigator:
             #traj
             self.current_pose = (0, 0, 0)
         
-                def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
+        def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.
             Args:
@@ -289,10 +289,7 @@ class XsecNavigator:
                     end_distance = [distance * radius_wheel[0], distance * radius_wheel[1]] #distance from rad to m
                     dist_tol = 0.01
                     
-                # rospy.loginfo("current distance: ", round(self.current_distance[0],3) , round(self.current_distance[1],3))
-                # rospy.loginfo("Goal distance: ", round(self.goal_distance[0],3) , round(self.goal_distance[1],3))
-                # rospy.loginfo("End distance: ", round(end_distance[0],3), round(end_distance[1],3))
-                
+
                 #check if final position is reached for left and right
                 if np.abs(self.current_distance[0] - end_distance[0]) < dist_tol:
                     wheel_cmd.vel_left = 0
@@ -317,114 +314,114 @@ class XsecNavigator:
 
             return wheel_cmd
         
-        def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
-            """
-            Calculate the wheel command based on the current pose and the target trajectory.
-            Args:
-                cur_pose (Pose): The current pose of the robot.
-            Returns:
-                WheelsCmdStamped: The command for the robot's wheels.
-            """
-            wheel_cmd = WheelsCmdStamped()
+        # def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
+        #     """
+        #     Calculate the wheel command based on the current pose and the target trajectory.
+        #     Args:
+        #         cur_pose (Pose): The current pose of the robot.
+        #     Returns:
+        #         WheelsCmdStamped: The command for the robot's wheels.
+        #     """
+        #     wheel_cmd = WheelsCmdStamped()
        
-            if self.current_command_index >= len(self.commands):
-                # All commands have been executed, stop the robot
-                rospy.loginfo("All done")
-                wheel_cmd.vel_left = 0
-                wheel_cmd.vel_right = 0
-                self.all_commands_excecuted = True
+        #     if self.current_command_index >= len(self.commands):
+        #         # All commands have been executed, stop the robot
+        #         rospy.loginfo("All done")
+        #         wheel_cmd.vel_left = 0
+        #         wheel_cmd.vel_right = 0
+        #         self.all_commands_excecuted = True
                 
-            else:
+        #     else:
                 
-                time = self.counter/self.update_rate
-                self.current_ticks[0] = ticks[0] - self.init_tick[0]
-                self.current_ticks[1] = ticks[1] - self.init_tick[1]
-                #rospy.loginfo("current ticks: ", self.current_ticks, " time: ", time)
+        #         time = self.counter/self.update_rate
+        #         self.current_ticks[0] = ticks[0] - self.init_tick[0]
+        #         self.current_ticks[1] = ticks[1] - self.init_tick[1]
+        #         #rospy.loginfo("current ticks: ", self.current_ticks, " time: ", time)
                     
-                # Get the current command
-                current_command = self.commands[self.current_command_index]
-                command_type = current_command.type  
-                direction = current_command.direction  
-                distance = current_command.distance
+        #         # Get the current command
+        #         current_command = self.commands[self.current_command_index]
+        #         command_type = current_command.type  
+        #         direction = current_command.direction  
+        #         distance = current_command.distance
 
-                if command_type == MotionCommand.Type.STRAIGHT:
-                    #rospy.loginfo("Straight")
-                    end_distance = [distance, distance]
-                    dist_tol = 0.01
+        #         if command_type == MotionCommand.Type.STRAIGHT:
+        #             #rospy.loginfo("Straight")
+        #             end_distance = [distance, distance]
+        #             dist_tol = 0.01
                     
-                    self.goal_distance[0] += FIXED_SPEED/self.update_rate 
-                    self.goal_distance[1] += FIXED_SPEED/self.update_rate 
-                    self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
-                    self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
+        #             self.goal_distance[0] += FIXED_SPEED/self.update_rate 
+        #             self.goal_distance[1] += FIXED_SPEED/self.update_rate 
+        #             self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
+        #             self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
                 
 
-                elif command_type == MotionCommand.Type.ROTATE:
-                    #rospy.loginfo("Rotate")
-                    sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
-                    # Rotate the robot, either clockwise or counterclockwise
-                    self.goal_distance[0] += sign * FIXED_SPEED/self.update_rate 
-                    self.goal_distance[1] += -sign * FIXED_SPEED/self.update_rate 
-                    self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
-                    self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
-                    end_distance = [sign * distance * WHEEL_DISTANCE/2, -sign * distance * (WHEEL_DISTANCE)/2] #distance from rad to m
-                    dist_tol = 0.005
+        #         elif command_type == MotionCommand.Type.ROTATE:
+        #             #rospy.loginfo("Rotate")
+        #             sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
+        #             # Rotate the robot, either clockwise or counterclockwise
+        #             self.goal_distance[0] += sign * FIXED_SPEED/self.update_rate 
+        #             self.goal_distance[1] += -sign * FIXED_SPEED/self.update_rate 
+        #             self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
+        #             self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
+        #             end_distance = [sign * distance * WHEEL_DISTANCE/2, -sign * distance * (WHEEL_DISTANCE)/2] #distance from rad to m
+        #             dist_tol = 0.005
                     
                     
                        
-                elif command_type == MotionCommand.Type.CURVE:
-                    #rospy.loginfo("Curve")
-                    sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
-                    # Move in a curve with a specified radius (TODO backwords curve)
-                    radius = current_command.radius
-                    radius_wheel = [0,0]
-                    speed_wheel = [0,0]
-                    radius_wheel[0] = radius + sign * WHEEL_DISTANCE / 2
-                    radius_wheel[1] = radius - sign * WHEEL_DISTANCE / 2
-                    speed_wheel[0] = FIXED_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius)))
-                    speed_wheel[1] = FIXED_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius)))
+        #         elif command_type == MotionCommand.Type.CURVE:
+        #             #rospy.loginfo("Curve")
+        #             sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
+        #             # Move in a curve with a specified radius (TODO backwords curve)
+        #             radius = current_command.radius
+        #             radius_wheel = [0,0]
+        #             speed_wheel = [0,0]
+        #             radius_wheel[0] = radius + sign * WHEEL_DISTANCE / 2
+        #             radius_wheel[1] = radius - sign * WHEEL_DISTANCE / 2
+        #             speed_wheel[0] = FIXED_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius)))
+        #             speed_wheel[1] = FIXED_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius)))
                     
-                    self.goal_distance[0] += speed_wheel[0]/self.update_rate
-                    self.goal_distance[1] += speed_wheel[1]/self.update_rate 
-                    self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
-                    self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
-                    end_distance = [distance * radius_wheel[0], distance * radius_wheel[1]] #distance from rad to m
-                    dist_tol = 0.01
+        #             self.goal_distance[0] += speed_wheel[0]/self.update_rate
+        #             self.goal_distance[1] += speed_wheel[1]/self.update_rate 
+        #             self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
+        #             self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
+        #             end_distance = [distance * radius_wheel[0], distance * radius_wheel[1]] #distance from rad to m
+        #             dist_tol = 0.01
                     
-                # rospy.loginfo("current distance: ", round(self.current_distance[0],3) , round(self.current_distance[1],3))
-                # rospy.loginfo("Goal distance: ", round(self.goal_distance[0],3) , round(self.goal_distance[1],3))
-                # rospy.loginfo("End distance: ", round(end_distance[0],3), round(end_distance[1],3))
+        #         # rospy.loginfo("current distance: ", round(self.current_distance[0],3) , round(self.current_distance[1],3))
+        #         # rospy.loginfo("Goal distance: ", round(self.goal_distance[0],3) , round(self.goal_distance[1],3))
+        #         # rospy.loginfo("End distance: ", round(end_distance[0],3), round(end_distance[1],3))
                 
-                #control - switch between navigate and fine adjustment
-                if self.flag_goal_r:
-                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.goal_distance[0], end_distance[1]])
-                elif self.flag_goal_l:
-                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.goal_distance[1]])
-                else:
-                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller(self.goal_distance)
+        #         #control - switch between navigate and fine adjustment
+        #         if self.flag_goal_r:
+        #             wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.goal_distance[0], end_distance[1]])
+        #         elif self.flag_goal_l:
+        #             wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.goal_distance[1]])
+        #         else:
+        #             wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller(self.goal_distance)
                 
-                #check if final position is reached for left and right
-                if np.abs(self.current_distance[0] - end_distance[0]) < dist_tol:
-                    wheel_cmd.vel_left = 0
-                    self.flag_goal_l = True
-                if np.abs(self.current_distance[1] - end_distance[1]) < dist_tol:
-                    wheel_cmd.vel_right = 0
-                    self.flag_goal_r = True
+        #         #check if final position is reached for left and right
+        #         if np.abs(self.current_distance[0] - end_distance[0]) < dist_tol:
+        #             wheel_cmd.vel_left = 0
+        #             self.flag_goal_l = True
+        #         if np.abs(self.current_distance[1] - end_distance[1]) < dist_tol:
+        #             wheel_cmd.vel_right = 0
+        #             self.flag_goal_r = True
 
-                #close command
-                if self.flag_goal_r and self.flag_goal_l:
-                    #rospy.loginfo("Command done")
-                    #reinit
-                    self.current_distance = [0, 0]
-                    self.goal_distance = [0, 0]
-                    self.counter = 0
-                    self.init_tick = ticks
-                    self.current_command_index += 1 
-                    self.flag_goal_l = False
-                    self.flag_goal_r = False
-                else:
-                    self.counter += 1
+        #         #close command
+        #         if self.flag_goal_r and self.flag_goal_l:
+        #             #rospy.loginfo("Command done")
+        #             #reinit
+        #             self.current_distance = [0, 0]
+        #             self.goal_distance = [0, 0]
+        #             self.counter = 0
+        #             self.init_tick = ticks
+        #             self.current_command_index += 1 
+        #             self.flag_goal_l = False
+        #             self.flag_goal_r = False
+        #         else:
+        #             self.counter += 1
 
-            return wheel_cmd
+        #     return wheel_cmd
         
         def controller(self, target_distance):
             error_distance = [0,0]
