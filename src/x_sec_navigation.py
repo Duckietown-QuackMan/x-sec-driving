@@ -177,9 +177,11 @@ class XsecNavigation:
                 
             
             if WITH_TRAJ:
+                # wheel vel control with predefined trajectory (work in progress)
                 self.traj_controller(move, self.x_sec_navigator.trajectories[path])
             
             else:
+                
                 while not move.all_commands_excecuted:
                     
                     if WITH_FEEDBACK:
@@ -187,7 +189,6 @@ class XsecNavigation:
                         wheel_cmd = move.get_wheel_cmd_pose((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
                     elif WITH_TICKS:
                         # wheel vel control with encoder ticks feedback
-                        print(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
                         wheel_cmd = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
                     else:
                         # calculate wheel cmd
