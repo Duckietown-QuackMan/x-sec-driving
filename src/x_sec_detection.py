@@ -34,8 +34,6 @@ mutex = Lock()
 class XsecDetection:
 
     def __init__(self):
-
-        
         self.rate = 0.1
         self.evaluate = False
         self.det_start_time = None 
@@ -233,7 +231,7 @@ class XsecDetection:
                 
                 # Debug 
                 if self.evaluate:
-                    #rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
+                    rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
                     #Publish eval image
                     input_msg_stamp = msg.header.stamp
                     self.publish_line_masks(img, input_msg_stamp)

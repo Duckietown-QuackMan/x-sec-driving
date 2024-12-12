@@ -148,10 +148,10 @@ class XsecNavigation:
         
         self.setup_params()
         
-        rospy.loginfo(f"Waiting to receive messages from the topics {self.name_sub_tick_l_topic} and {self.name_sub_tick_r_topic} ")
+        
         while not self.sub_ticks_r and not self.sub_ticks_r:
+            rospy.loginfo(f"Waiting to receive messages from the topics {self.name_sub_tick_l_topic} and {self.name_sub_tick_r_topic}")
             rospy.sleep(0.2)
-        rospy.loginfo(f"Received topics {self.name_sub_tick_l_topic} and {self.name_sub_tick_r_topic}!")
         
         if msg.data == True:
             #flag: true while navigating
@@ -160,19 +160,19 @@ class XsecNavigation:
             path = random.randint(0,2)
             
             path = 0
-            print("init ticks: ", self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
+            #print("init ticks: ", self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
             if path == Path.STRAIGHT.value: 
-                print("Move straight")
+                rospy.loginfo("Move straight")
                 move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_straight.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             elif path == Path.RIGHT.value: 
-                print("Move right")
+                rospy.loginfo("Move right")
                 move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_right.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             elif path == Path.LEFT.value:
-                print("Move left")
+                rospy.loginfo("Move left")
                 move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_left.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             else:
                 # Print an error message if conversion fails
-                print("Error: Invalid mission. Please enter a valid number.", file=sys.stderr)
+                rospy.loginfo("Error: Invalid mission. Please enter a valid number.", file=sys.stderr)
                 sys.exit(1)  # Exit with a non-zero code indicating an error
                 
             
@@ -182,9 +182,11 @@ class XsecNavigation:
             else:
                 while not move.all_commands_excecuted:
                     
-                    if WITH_FEEDBACK: #TODO
+                    if WITH_FEEDBACK:
+                        # wheel vel control with bot pose feedback - not applicable for quackman game
                         wheel_cmd = move.get_wheel_cmd_pose((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
                     elif WITH_TICKS:
+                        # wheel vel control with encoder ticks feedback
                         print(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
                         wheel_cmd = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
                     else:
@@ -192,9 +194,8 @@ class XsecNavigation:
                         wheel_cmd = move.get_wheel_cmd()
                     self.pub_wheel_cmd.publish(wheel_cmd)
                     self.rate.sleep()
-                    print("Driving ", wheel_cmd.vel_left, wheel_cmd.vel_right)
+                    #rospy.loginfo("Driving ", wheel_cmd.vel_left, wheel_cmd.vel_right)
             
-            print("Finished Path")
             #switch to lane following
             self.pub_flag.publish(False)
             wheel_cmd.vel_left = 0
@@ -206,13 +207,18 @@ class XsecNavigation:
             rospy.sleep(2)
             
         else: 
-            print("... wait for xsec GO-command ...")
+            rospy.loginfo("... wait for xsec GO-command ...")
             
             rospy.sleep(0.5)
             # self.cnt += 1
             
             
     def traj_controller(self, move, trajectory): 
+        """ 
+        control wheel vel through predefined trajectory points
+        "work in progress"
+        
+        """
         
         pos_tol = 0.01
         current_coord = np.array([0,0])

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from duckietown_msgs.msg import WheelsCmdStamped
 from geometry_msgs.msg import PoseStamped, Pose
 import matplotlib.pyplot as plt
+import rospy
 
 #extensions
 import math
@@ -143,7 +144,7 @@ class XsecNavigator:
                 y_start = y_coord[-1]
                 
                 trajectory.extend(list(zip(x_coord, y_coord)))
-                print(trajectory)
+                #rospy.loginfo(trajectory)
     
             #self.plot_trajectory(trajectory)
             trajectories.append(trajectory)
@@ -201,8 +202,7 @@ class XsecNavigator:
             #traj
             self.current_pose = (0, 0, 0)
         
-        
-        def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
+                def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.
             Args:
@@ -214,7 +214,7 @@ class XsecNavigator:
        
             if self.current_command_index >= len(self.commands):
                 # All commands have been executed, stop the robot
-                print("All done")
+                rospy.loginfo("All done")
                 wheel_cmd.vel_left = 0
                 wheel_cmd.vel_right = 0
                 self.all_commands_excecuted = True
@@ -224,28 +224,33 @@ class XsecNavigator:
                 time = self.counter/self.update_rate
                 self.current_ticks[0] = ticks[0] - self.init_tick[0]
                 self.current_ticks[1] = ticks[1] - self.init_tick[1]
-                print("current ticks: ", self.current_ticks, " time: ", time)
+                #rospy.loginfo("current ticks: ", self.current_ticks, " time: ", time)
                     
                 # Get the current command
                 current_command = self.commands[self.current_command_index]
                 command_type = current_command.type  
                 direction = current_command.direction  
                 distance = current_command.distance
-
+                
                 if command_type == MotionCommand.Type.STRAIGHT:
-                    print("Straight")
+                    #rospy.loginfo("Straight")
                     end_distance = [distance, distance]
                     dist_tol = 0.01
                     
-                    self.goal_distance[0] += FIXED_SPEED/self.update_rate 
-                    self.goal_distance[1] += FIXED_SPEED/self.update_rate 
                     self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
                     self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
                     
+                    #startup
+                    if wheel_cmd.vel_left == 0 and wheel_cmd.right == 0:
+                        wheel_cmd.vel_left = FIXED_SPEED
+                        wheel_cmd.vel_right = FIXED_SPEED
+                    #right wheel reached goal - fine adjustment
                     if self.flag_goal_r:
-                        wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.goal_distance[0], end_distance[1]])
+                        wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.current_distance[0], end_distance[1]])
+                    #left wheel reached goal - fine adjustment
                     elif self.flag_goal_l:
-                        wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.goal_distance[1]])
+                        wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.current_distance[1]])
+                    #controller 
                     else:
                         error = self.current_distance[0] - self.current_distance[1]
                         wheel_cmd.vel_left = FIXED_SPEED
@@ -253,7 +258,7 @@ class XsecNavigator:
                 
 
                 elif command_type == MotionCommand.Type.ROTATE:
-                    print("Rotate")
+                    #rospy.loginfo("Rotate")
                     sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
                     # Rotate the robot, either clockwise or counterclockwise
                     self.goal_distance[0] += sign * FIXED_SPEED/self.update_rate 
@@ -266,7 +271,7 @@ class XsecNavigator:
                     
                        
                 elif command_type == MotionCommand.Type.CURVE:
-                    print("Curve")
+                    #rospy.loginfo("Curve")
                     sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
                     # Move in a curve with a specified radius (TODO backwords curve)
                     radius = current_command.radius
@@ -284,17 +289,9 @@ class XsecNavigator:
                     end_distance = [distance * radius_wheel[0], distance * radius_wheel[1]] #distance from rad to m
                     dist_tol = 0.01
                     
-                print("current distance: ", round(self.current_distance[0],3) , round(self.current_distance[1],3))
-                print("Goal distance: ", round(self.goal_distance[0],3) , round(self.goal_distance[1],3))
-                print("End distance: ", round(end_distance[0],3), round(end_distance[1],3))
-                
-                #control - switch between navigate and fine adjustment
-                # if self.flag_goal_r:
-                #     wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.goal_distance[0], end_distance[1]])
-                # elif self.flag_goal_l:
-                #     wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.goal_distance[1]])
-                # else:
-                #     wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller(self.goal_distance)
+                # rospy.loginfo("current distance: ", round(self.current_distance[0],3) , round(self.current_distance[1],3))
+                # rospy.loginfo("Goal distance: ", round(self.goal_distance[0],3) , round(self.goal_distance[1],3))
+                # rospy.loginfo("End distance: ", round(end_distance[0],3), round(end_distance[1],3))
                 
                 #check if final position is reached for left and right
                 if np.abs(self.current_distance[0] - end_distance[0]) < dist_tol:
@@ -306,7 +303,116 @@ class XsecNavigator:
 
                 #close command
                 if self.flag_goal_r and self.flag_goal_l:
-                    print("Command done")
+                    #rospy.loginfo("Command done")
+                    #reinit
+                    self.current_distance = [0, 0]
+                    self.goal_distance = [0, 0]
+                    self.counter = 0
+                    self.init_tick = ticks
+                    self.current_command_index += 1 
+                    self.flag_goal_l = False
+                    self.flag_goal_r = False
+                else:
+                    self.counter += 1
+
+            return wheel_cmd
+        
+        def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
+            """
+            Calculate the wheel command based on the current pose and the target trajectory.
+            Args:
+                cur_pose (Pose): The current pose of the robot.
+            Returns:
+                WheelsCmdStamped: The command for the robot's wheels.
+            """
+            wheel_cmd = WheelsCmdStamped()
+       
+            if self.current_command_index >= len(self.commands):
+                # All commands have been executed, stop the robot
+                rospy.loginfo("All done")
+                wheel_cmd.vel_left = 0
+                wheel_cmd.vel_right = 0
+                self.all_commands_excecuted = True
+                
+            else:
+                
+                time = self.counter/self.update_rate
+                self.current_ticks[0] = ticks[0] - self.init_tick[0]
+                self.current_ticks[1] = ticks[1] - self.init_tick[1]
+                #rospy.loginfo("current ticks: ", self.current_ticks, " time: ", time)
+                    
+                # Get the current command
+                current_command = self.commands[self.current_command_index]
+                command_type = current_command.type  
+                direction = current_command.direction  
+                distance = current_command.distance
+
+                if command_type == MotionCommand.Type.STRAIGHT:
+                    #rospy.loginfo("Straight")
+                    end_distance = [distance, distance]
+                    dist_tol = 0.01
+                    
+                    self.goal_distance[0] += FIXED_SPEED/self.update_rate 
+                    self.goal_distance[1] += FIXED_SPEED/self.update_rate 
+                    self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
+                    self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
+                
+
+                elif command_type == MotionCommand.Type.ROTATE:
+                    #rospy.loginfo("Rotate")
+                    sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
+                    # Rotate the robot, either clockwise or counterclockwise
+                    self.goal_distance[0] += sign * FIXED_SPEED/self.update_rate 
+                    self.goal_distance[1] += -sign * FIXED_SPEED/self.update_rate 
+                    self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
+                    self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
+                    end_distance = [sign * distance * WHEEL_DISTANCE/2, -sign * distance * (WHEEL_DISTANCE)/2] #distance from rad to m
+                    dist_tol = 0.005
+                    
+                    
+                       
+                elif command_type == MotionCommand.Type.CURVE:
+                    #rospy.loginfo("Curve")
+                    sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
+                    # Move in a curve with a specified radius (TODO backwords curve)
+                    radius = current_command.radius
+                    radius_wheel = [0,0]
+                    speed_wheel = [0,0]
+                    radius_wheel[0] = radius + sign * WHEEL_DISTANCE / 2
+                    radius_wheel[1] = radius - sign * WHEEL_DISTANCE / 2
+                    speed_wheel[0] = FIXED_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius)))
+                    speed_wheel[1] = FIXED_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius)))
+                    
+                    self.goal_distance[0] += speed_wheel[0]/self.update_rate
+                    self.goal_distance[1] += speed_wheel[1]/self.update_rate 
+                    self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
+                    self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
+                    end_distance = [distance * radius_wheel[0], distance * radius_wheel[1]] #distance from rad to m
+                    dist_tol = 0.01
+                    
+                # rospy.loginfo("current distance: ", round(self.current_distance[0],3) , round(self.current_distance[1],3))
+                # rospy.loginfo("Goal distance: ", round(self.goal_distance[0],3) , round(self.goal_distance[1],3))
+                # rospy.loginfo("End distance: ", round(end_distance[0],3), round(end_distance[1],3))
+                
+                #control - switch between navigate and fine adjustment
+                if self.flag_goal_r:
+                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.goal_distance[0], end_distance[1]])
+                elif self.flag_goal_l:
+                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.goal_distance[1]])
+                else:
+                    wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller(self.goal_distance)
+                
+                #check if final position is reached for left and right
+                if np.abs(self.current_distance[0] - end_distance[0]) < dist_tol:
+                    wheel_cmd.vel_left = 0
+                    self.flag_goal_l = True
+                if np.abs(self.current_distance[1] - end_distance[1]) < dist_tol:
+                    wheel_cmd.vel_right = 0
+                    self.flag_goal_r = True
+
+                #close command
+                if self.flag_goal_r and self.flag_goal_l:
+                    #rospy.loginfo("Command done")
                     #reinit
                     self.current_distance = [0, 0]
                     self.goal_distance = [0, 0]
@@ -330,6 +436,11 @@ class XsecNavigator:
             
             return self.wheel_vel_l, self.wheel_vel_r
         
+        
+        ################################
+        ### controller following predefined trajectory points
+        ### not finished
+        ################################
         def get_wheel_cmd_traj(self, ticks, end_coord) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.
@@ -344,7 +455,7 @@ class XsecNavigator:
             time = self.counter/self.update_rate
             self.current_ticks[0] = ticks[0] - self.init_tick[0]
             self.current_ticks[1] = ticks[1] - self.init_tick[1]
-            print("current ticks: ", self.current_ticks, " time: ", time)
+            rospy.loginfo("current ticks: ", self.current_ticks, " time: ", time)
     
             
             max_wheel_speed = FIXED_SPEED  # Maximum wheel speed in rad/s
@@ -365,7 +476,7 @@ class XsecNavigator:
             
             # Compute wheel rotations for on-the-spot rotation
             if abs(delta_theta) > 1e-6:  # If there's a significant rotation to perform
-                print("rotation")
+                rospy.loginfo("rotation")
                 duration = abs(delta_theta) * wheel_base / (2 * max_wheel_speed * wheel_radius)
                 
                 left_wheel_rotation = delta_theta * wheel_base / (2 * wheel_radius)
@@ -382,7 +493,7 @@ class XsecNavigator:
             # Compute wheel rotations for straight-line movement
             distance = math.sqrt(dx**2 + dy**2)
             if distance > 1e-6:  # If there's a significant distance to move
-                print("distance")
+                rospy.loginfo("distance")
                 duration = distance / (max_wheel_speed * wheel_radius)
             
                 left_wheel_rotation = distance / wheel_radius
@@ -402,7 +513,7 @@ class XsecNavigator:
             delta_theta = (delta_theta + math.pi) % (2 * math.pi) - math.pi
             
             if abs(delta_theta) > 1e-6:  # Final orientation adjustment
-                print("adjust")
+                rospy.loginfo("adjust")
                 duration = abs(delta_theta) * wheel_base / (2 * max_wheel_speed * wheel_radius)
                     
                 left_wheel_rotation = delta_theta * wheel_base / (2 * wheel_radius)
@@ -414,6 +525,10 @@ class XsecNavigator:
                 
             return kinematic_sequences
         
+        
+        ################################
+        ### controller with pose feedback
+        ################################
         def get_wheel_cmd_pose(self, cur_pose: Pose) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.
@@ -466,7 +581,7 @@ class XsecNavigator:
             #Get current distances
             self.distance_current = np.sqrt((np.abs(cur_pose.position.x) - np.abs(self.initial_pose.position.x))**2 + (np.abs(cur_pose.position.y) - np.abs(self.initial_pose.position.y))**2)
             current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
-            print("Going Straight: current ", self.distance_current, " speed ", speed, ", yaw ", current_yaw)
+            rospy.loginfo("Going Straight: current ", self.distance_current, " speed ", speed, ", yaw ", current_yaw)
             
             return speed, speed
         
@@ -476,7 +591,7 @@ class XsecNavigator:
             # Convert quaternion to Euler angles (roll, pitch, yaw)
             current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
             self.distance_current = np.abs(self.initial_yaw - current_yaw) + TOL_ROTATE
-            print("Rotate: current ", self.distance_current, " speed ", angular_speed, ", yaw ", current_yaw )
+            rospy.loginfo("Rotate: current ", self.distance_current, " speed ", angular_speed, ", yaw ", current_yaw )
 
             return -angular_speed, angular_speed
         
@@ -486,7 +601,7 @@ class XsecNavigator:
             # get current and inital orientation
             current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
             self.distance_current = np.abs(self.wraptopi((current_yaw - self.initial_yaw))) + TOL_CURVE
-            print("Making a curve: current ", self.distance_current, " speed ", FIXED_ANGULAR_SPEED)
+            rospy.loginfo("Making a curve: current ", self.distance_current, " speed ", FIXED_ANGULAR_SPEED)
     
             return FIXED_ANGULAR_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius))), FIXED_ANGULAR_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius)))
         
@@ -499,6 +614,9 @@ class XsecNavigator:
                 angle += 2*np.pi
             return angle
         
+        ##############################
+        ### open loop controller
+        ##############################
         def get_wheel_cmd(self) -> WheelsCmdStamped:
             """
             Calculate the wheel command based on the current pose and the target trajectory.
@@ -512,7 +630,7 @@ class XsecNavigator:
             
             if self.current_command_index >= len(self.commands):
                 # All commands have been executed, stop the robot
-                print("All done")
+                rospy.loginfo("All done")
                 wheel_cmd.vel_left = 0
                 wheel_cmd.vel_right = 0
                 self.all_commands_excecuted = True
@@ -523,16 +641,16 @@ class XsecNavigator:
                 command_type = current_command.type.value  
                 direction = current_command.direction
                 distance = current_command.distance
-                print(command_type, direction)
+                rospy.loginfo(command_type, direction)
                 if command_type == MotionCommand.Type.STRAIGHT:
-                    print("Straight")
+                    rospy.loginfo("Straight")
                     speed = FIXED_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_SPEED
                     wheel_cmd.vel_left, wheel_cmd.vel_right = speed, speed
                     
                     current_distance = time * speed
 
                 elif command_type == MotionCommand.Type.ROTATE:
-                    print("Rotate")
+                    rospy.loginfo("Rotate")
                     # Rotate the robot, either clockwise or counterclockwise
                     angular_speed = FIXED_ROTATION_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_ROTATION_SPEED   # Example speed for rotation
                     wheel_cmd.vel_left, wheel_cmd.vel_right = -angular_speed, angular_speed
@@ -541,7 +659,7 @@ class XsecNavigator:
                     
                     
                 elif command_type == MotionCommand.Type.CURVE:
-                    print("Curve")
+                    rospy.loginfo("Curve")
                     # Move in a curve with a specified radius
                     radius = current_command.radius 
                     sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
@@ -552,12 +670,12 @@ class XsecNavigator:
                     
                     current_distance = avg_vel * time / radius
                     
-                print("current distance: ", round(current_distance,3),"   Distance: ", round(distance,3))
+                rospy.loginfo("current distance: ", round(current_distance,3),"   Distance: ", round(distance,3))
                 
                 
                 
                 if current_distance >= distance:
-                    print("Command done")
+                    rospy.loginfo("Command done")
                     #reinit
                     current_distance = 0
                     self.current_command_index += 1
