@@ -153,14 +153,12 @@ class XsecNavigation:
             rospy.loginfo(f"Waiting to receive messages from the topics {self.name_sub_tick_l_topic} and {self.name_sub_tick_r_topic}")
             rospy.sleep(0.2)
         
+        # get x_sec_go flag from state_machine
         if msg.data == True:
             #flag: true while navigating
             self.pub_flag.publish(True)
-            #get next mission
+            #get next mission randomly
             path = random.randint(0,2)
-            
-            path = 0
-            #print("init ticks: ", self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data)
             if path == Path.STRAIGHT.value: 
                 rospy.loginfo("Move straight")
                 move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_straight.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
@@ -175,15 +173,12 @@ class XsecNavigation:
                 rospy.loginfo("Error: Invalid mission. Please enter a valid number.", file=sys.stderr)
                 sys.exit(1)  # Exit with a non-zero code indicating an error
                 
-            
+            # choose controller tipe
             if WITH_TRAJ:
                 # wheel vel control with predefined trajectory (work in progress)
                 self.traj_controller(move, self.x_sec_navigator.trajectories[path])
-            
             else:
-                
                 while not move.all_commands_excecuted:
-                    
                     if WITH_FEEDBACK:
                         # wheel vel control with bot pose feedback - not applicable for quackman game
                         wheel_cmd = move.get_wheel_cmd_pose((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
@@ -220,7 +215,6 @@ class XsecNavigation:
         "work in progress"
         
         """
-        
         pos_tol = 0.01
         current_coord = np.array([0,0])
         
@@ -228,7 +222,6 @@ class XsecNavigation:
             
             end_coord = np.array(coord)
             while np.linalg.norm(current_coord, end_coord) >= pos_tol: 
-                
                 wheel_cmd, current_coord = move.get_wheel_cmd_traj((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), current_coord, end_coord) 
                 self.pub_wheel_cmd.publish(wheel_cmd)
                 self.rate.sleep()

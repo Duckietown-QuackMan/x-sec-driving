@@ -193,7 +193,7 @@ class XsecNavigator:
        
             if self.current_command_index >= len(self.commands):
                 # All commands have been executed, stop the robot
-                rospy.loginfo("All done")
+                rospy.loginfo(f"All done")
                 wheel_cmd.vel_left = 0
                 wheel_cmd.vel_right = 0
                 self.all_commands_excecuted = True
@@ -204,7 +204,7 @@ class XsecNavigator:
                 self.current_ticks[1] = ticks[1] - self.init_tick[1]
                 self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
                 self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
-                #rospy.loginfo("current ticks: ", self.current_ticks, " time: ", time)
+                rospy.loginfo(f"current ticks: {self.current_ticks}")
                     
                 # Get the current command
                 current_command = self.commands[self.current_command_index]
@@ -213,18 +213,21 @@ class XsecNavigator:
                 distance = current_command.distance
                 
                 if command_type == MotionCommand.Type.STRAIGHT:
-                    #rospy.loginfo("Straight")
+                    rospy.loginfo(f"Straight")
                     end_distance = [distance, distance]
                     wheel_cmd.vel_left = FIXED_SPEED
                     wheel_cmd.vel_right = FIXED_SPEED
+                    rospy.loginfo(f"{end_distance}, {self.current_distance}")
                 
                 elif command_type == MotionCommand.Type.ROTATE:
-                    #rospy.loginfo("Rotate")
+                    rospy.loginfo(f"Rotate")
                     # Rotate the robot, either clockwise or counterclockwise
                     sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
                     end_distance = [sign * distance * WHEEL_DISTANCE/2, -sign * distance * (WHEEL_DISTANCE)/2] #distance from rad to m
                     wheel_cmd.vel_left = sign * FIXED_SPEED
                     wheel_cmd.vel_right = -sign * FIXED_SPEED
+                    
+                    rospy.loginfo(f"{end_distance} , {self.current_distance}")
                        
                 elif command_type == MotionCommand.Type.CURVE:
                     #rospy.loginfo("Curve")
@@ -239,7 +242,7 @@ class XsecNavigator:
                     
 
                 #check if final position is reached for left and right
-                if self.current_distance[0] > end_distance[0] or self.current_distance[1] > end_distance[1]:
+                if np.abs(self.current_distance[0]) > np.abs(end_distance[0]) or np.abs(self.current_distance[1]) > np.abs(end_distance[1]):
                     wheel_cmd.vel_left = 0
                     wheel_cmd.vel_right = 0
 
