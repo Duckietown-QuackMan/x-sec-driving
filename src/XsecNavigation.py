@@ -303,6 +303,25 @@ class XsecNavigator:
                     self.goal_distance[1] += FIXED_SPEED/self.update_rate 
                     self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
                     self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
+<<<<<<< HEAD
+                    
+                    #startup
+                    if wheel_cmd.vel_left == 0 and wheel_cmd.vel_right == 0:
+                        wheel_cmd.vel_left = FIXED_SPEED
+                        wheel_cmd.vel_right = FIXED_SPEED
+                    #right wheel reached goal - fine adjustment
+                    if self.flag_goal_r:
+                        wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([self.current_distance[0], end_distance[1]])
+                    #left wheel reached goal - fine adjustment
+                    elif self.flag_goal_l:
+                        wheel_cmd.vel_left, wheel_cmd.vel_right = self.controller([end_distance[0], self.current_distance[1]])
+                    #controller 
+                    else:
+                        error = self.current_distance[0] - self.current_distance[1]
+                        wheel_cmd.vel_left = FIXED_SPEED
+                        wheel_cmd.vel_right = FIXED_SPEED + self.kp_r * error * 1e1
+=======
+>>>>>>> e55597e2451da2899680caf5b2d4b7a838d5869f
                 
 
                 elif command_type == MotionCommand.Type.ROTATE:
