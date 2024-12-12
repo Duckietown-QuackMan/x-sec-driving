@@ -241,7 +241,7 @@ class XsecNavigator:
                     self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
                     
                     #startup
-                    if wheel_cmd.vel_left == 0 and wheel_cmd.right == 0:
+                    if wheel_cmd.vel_left == 0 and wheel_cmd.vel_right == 0:
                         wheel_cmd.vel_left = FIXED_SPEED
                         wheel_cmd.vel_right = FIXED_SPEED
                     #right wheel reached goal - fine adjustment
