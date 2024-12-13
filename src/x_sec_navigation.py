@@ -153,7 +153,7 @@ class XsecNavigation:
     def xsec_navigation_callback(self, msg):
         wheel_cmd = Twist2DStamped()
         
-        self.setup_params()
+        # self.setup_params()
         
         
         while not self.sub_ticks_r and not self.sub_ticks_r:
@@ -218,7 +218,7 @@ class XsecNavigation:
             rospy.sleep(2)
             
         else: 
-            rospy.loginfo("... wait for xsec GO-command ...")
+            # rospy.loginfo("... wait for xsec GO-command ...")
             
             rospy.sleep(0.5)
             # self.cnt += 1

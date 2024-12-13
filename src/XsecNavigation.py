@@ -20,7 +20,7 @@ FIXED_ANGULAR_SPEED = 6
 FIXED_ROTATION_SPEED = 6 
 BOT_CORRECTION = 0.7  #gimpy
 
-    
+debug_print = False
 
 class XsecNavigator:
     
@@ -232,15 +232,17 @@ class XsecNavigator:
                     
                 
                 elif command_type == MotionCommand.Type.ROTATE:
-                    rospy.loginfo(f"Rotate")
+                    if debug_print:
+                        rospy.loginfo(f"Rotate")
                     # Rotate the robot, either clockwise or counterclockwise
                     sign = 1 * BOT_CORRECTION if direction == MotionCommand.Direction.POSITIVE else -1 
                     end_distance = [sign * distance * WHEEL_DISTANCE/2, -sign * distance * WHEEL_DISTANCE/2] #distance from rad to m
                     wheel_cmd.v = 0
                     wheel_cmd.omega = -sign * FIXED_ANGULAR_SPEED
                     
-                    rospy.loginfo(f"{end_distance} , {self.current_distance}")
-                    rospy.loginfo(f"current ticks: {self.current_ticks}")
+                    if debug_print:
+                        rospy.loginfo(f"{end_distance} , {self.current_distance}")
+                        rospy.loginfo(f"current ticks: {self.current_ticks}")
                        
                 elif command_type == MotionCommand.Type.CURVE:
                     #rospy.loginfo("Curve")
@@ -275,8 +277,9 @@ class XsecNavigator:
                 #check if final position is reached for left wheel
                 elif np.abs(self.current_distance[0]) > np.abs(end_distance[0]):
                     self.fine_adjust = True
-                    rospy.loginfo(f"{end_distance} , {self.current_distance}")
-                    rospy.loginfo(f"current ticks, left reached: {self.current_ticks}")
+                    if debug_print:
+                        rospy.loginfo(f"{end_distance} , {self.current_distance}")
+                        rospy.loginfo(f"current ticks, left reached: {self.current_ticks}")
                     wheel_cmd.v = 0
                     wheel_cmd.omega = 0
                     #tick difference
@@ -287,14 +290,16 @@ class XsecNavigator:
                     elif tickdiff_l > 0:
                         wheel_adj.vel_right = 2* FIXED_SPEED
                     elif tickdiff_l < 0:
-                        rospy.loginfo(f"should not be here left {tickdiff_l}")
+                        if debug_print:
+                            rospy.loginfo(f"should not be here left {tickdiff_l}")
                         wheel_adj.vel_right = - 2* FIXED_SPEED
                  
                 #check if final position is reached for right wheel        
                 elif np.abs(self.current_distance[1]) > np.abs(end_distance[1]):
                     self.fine_adjust = True
-                    rospy.loginfo(f"{end_distance} , {self.current_distance}")
-                    rospy.loginfo(f"current ticks, right reached: {self.current_ticks}")
+                    if debug_print:
+                        rospy.loginfo(f"{end_distance} , {self.current_distance}")
+                        rospy.loginfo(f"current ticks, right reached: {self.current_ticks}")
                     wheel_cmd.v = 0
                     wheel_cmd.omega = 0
                     #tick difference
@@ -305,7 +310,8 @@ class XsecNavigator:
                     elif tickdiff_r > 0:
                         wheel_adj.vel_left = 2 * FIXED_SPEED
                     elif tickdiff_r < 0:
-                        rospy.loginfo(f"should not be here right{tickdiff_r}")
+                        if debug_print:
+                            rospy.loginfo(f"should not be here right{tickdiff_r}")
                         wheel_adj.vel_left = - 2 * FIXED_SPEED
                 
             return wheel_cmd, wheel_adj, self.fine_adjust
@@ -327,7 +333,8 @@ class XsecNavigator:
        
             if self.current_command_index >= len(self.commands):
                 # All commands have been executed, stop the robot
-                rospy.loginfo("All done")
+                if debug_print:
+                    rospy.loginfo("All done")
                 wheel_cmd.vel_left = 0
                 wheel_cmd.vel_right = 0
                 self.all_commands_excecuted = True
@@ -441,7 +448,8 @@ class XsecNavigator:
             time = self.counter/self.update_rate
             self.current_ticks[0] = ticks[0] - self.init_tick[0]
             self.current_ticks[1] = ticks[1] - self.init_tick[1]
-            rospy.loginfo("current ticks: ", self.current_ticks, " time: ", time)
+            if debug_print:
+                rospy.loginfo("current ticks: ", self.current_ticks, " time: ", time)
     
             
             max_wheel_speed = FIXED_SPEED  # Maximum wheel speed in rad/s
@@ -462,7 +470,8 @@ class XsecNavigator:
             
             # Compute wheel rotations for on-the-spot rotation
             if abs(delta_theta) > 1e-6:  # If there's a significant rotation to perform
-                rospy.loginfo("rotation")
+                if debug_print:
+                    rospy.loginfo("rotation")
                 duration = abs(delta_theta) * wheel_base / (2 * max_wheel_speed * wheel_radius)
                 
                 left_wheel_rotation = delta_theta * wheel_base / (2 * wheel_radius)
@@ -479,7 +488,8 @@ class XsecNavigator:
             # Compute wheel rotations for straight-line movement
             distance = math.sqrt(dx**2 + dy**2)
             if distance > 1e-6:  # If there's a significant distance to move
-                rospy.loginfo("distance")
+                if debug_print:
+                    rospy.loginfo("distance")
                 duration = distance / (max_wheel_speed * wheel_radius)
             
                 left_wheel_rotation = distance / wheel_radius
