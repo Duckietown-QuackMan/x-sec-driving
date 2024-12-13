@@ -1,6 +1,6 @@
 from enums import MotionCommand, DistanceType, Mission, Command
 from dataclasses import dataclass
-from duckietown_msgs.msg import WheelsCmdStamped
+from duckietown_msgs.msg import WheelsCmdStamped, Twist2DStamped
 from geometry_msgs.msg import PoseStamped, Pose
 import matplotlib.pyplot as plt
 import rospy
@@ -15,9 +15,10 @@ WHEEL_DISTANCE = 0.102 #102
 WHEEL_RADIUS = 0.035
 TOL_CURVE = 0.05
 TOL_ROTATE = 0.015
-FIXED_SPEED = 0.5 #m/s   
-FIXED_ANGULAR_SPEED = 0.5 #m/s
-FIXED_ROTATION_SPEED = 0.5 #m/s
+FIXED_SPEED = 0.2 #m/s   
+FIXED_ANGULAR_SPEED = 6 
+FIXED_ROTATION_SPEED = 6 
+BOT_CORRECTION = 0.7  #gimpy
 
     
 
@@ -39,7 +40,7 @@ class XsecNavigator:
             name="move_right",
             commands=[
                 Command(type=MotionCommand.Type.STRAIGHT, 
-                        distance=move_left_params["distance"] + 0.2,
+                        distance=move_right_params["distance"] + 0.15,
                         direction=MotionCommand.Direction.POSITIVE, 
                         ),
                 Command(type=MotionCommand.Type.ROTATE, 
@@ -47,7 +48,7 @@ class XsecNavigator:
                         distance=np.pi/2,
                         ),
                 Command(type=MotionCommand.Type.STRAIGHT, 
-                        distance=move_left_params["distance"],
+                        distance=move_right_params["distance"],
                         direction=MotionCommand.Direction.POSITIVE, 
                         ),
             ]
@@ -58,7 +59,7 @@ class XsecNavigator:
             name="move_left",
             commands=[
                 Command(type=MotionCommand.Type.STRAIGHT, 
-                        distance=move_left_params["distance"] + 0.2,
+                        distance=move_left_params["distance"] + 0.15,
                         direction=MotionCommand.Direction.POSITIVE, 
                         ),
                 Command(type=MotionCommand.Type.ROTATE, 
@@ -171,8 +172,10 @@ class XsecNavigator:
             self.current_distance = [0, 0]
             self.current_ticks = [0, 0]
             self.radius_wheel = [0,0]
-            self.flag_goal_l = False
-            self.flag_goal_r = False
+            self.flag_done = False
+            self.flag_l = False
+            self.flag_r = False
+            self.fine_adjust = False
             
             #traj
             self.current_pose = (0, 0, 0)
@@ -181,7 +184,7 @@ class XsecNavigator:
         ### controller using tick feedback
         ################################
         
-        def get_wheel_cmd_ticks(self, ticks) -> WheelsCmdStamped:
+        def get_wheel_cmd_ticks(self, ticks):
             """
             Calculate the wheel command based on the current pose and the target trajectory.
             Args:
@@ -189,22 +192,28 @@ class XsecNavigator:
             Returns:
                 WheelsCmdStamped: The command for the robot's wheels.
             """
-            wheel_cmd = WheelsCmdStamped()
+            wheel_cmd = Twist2DStamped()
+            wheel_adj = WheelsCmdStamped()
        
             if self.current_command_index >= len(self.commands):
                 # All commands have been executed, stop the robot
                 rospy.loginfo(f"All done")
-                wheel_cmd.vel_left = 0
-                wheel_cmd.vel_right = 0
+                wheel_cmd.v = 0
+                wheel_cmd.omega = 0
+                wheel_adj.vel_left = 0
+                wheel_adj.vel_left = 0
                 self.all_commands_excecuted = True
                 
             else:
-                time = self.counter/self.update_rate
+                
+                if self.flag_done:
+                    self.init_tick = ticks
+                    self.flag_done = False
+                
                 self.current_ticks[0] = ticks[0] - self.init_tick[0]
                 self.current_ticks[1] = ticks[1] - self.init_tick[1]
                 self.current_distance[0] = self.dist_per_tick * self.current_ticks[0]
                 self.current_distance[1] = self.dist_per_tick * self.current_ticks[1]
-                rospy.loginfo(f"current ticks: {self.current_ticks}")
                     
                 # Get the current command
                 current_command = self.commands[self.current_command_index]
@@ -213,21 +222,23 @@ class XsecNavigator:
                 distance = current_command.distance
                 
                 if command_type == MotionCommand.Type.STRAIGHT:
-                    rospy.loginfo(f"Straight")
                     end_distance = [distance, distance]
-                    wheel_cmd.vel_left = FIXED_SPEED
-                    wheel_cmd.vel_right = FIXED_SPEED
+                    wheel_cmd.v = FIXED_SPEED
+                    wheel_cmd.omega = 0
+                    rospy.loginfo(f"Straight")
                     rospy.loginfo(f"{end_distance}, {self.current_distance}")
+                    
                 
                 elif command_type == MotionCommand.Type.ROTATE:
                     rospy.loginfo(f"Rotate")
                     # Rotate the robot, either clockwise or counterclockwise
-                    sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
-                    end_distance = [sign * distance * WHEEL_DISTANCE/2, -sign * distance * (WHEEL_DISTANCE)/2] #distance from rad to m
-                    wheel_cmd.vel_left = sign * FIXED_SPEED
-                    wheel_cmd.vel_right = -sign * FIXED_SPEED
+                    sign = 1 * BOT_CORRECTION if direction == MotionCommand.Direction.POSITIVE else -1 
+                    end_distance = [sign * distance * WHEEL_DISTANCE/2, -sign * distance * WHEEL_DISTANCE/2] #distance from rad to m
+                    wheel_cmd.v = 0
+                    wheel_cmd.omega = -sign * FIXED_ANGULAR_SPEED
                     
                     rospy.loginfo(f"{end_distance} , {self.current_distance}")
+                    rospy.loginfo(f"current ticks: {self.current_ticks}")
                        
                 elif command_type == MotionCommand.Type.CURVE:
                     #rospy.loginfo("Curve")
@@ -237,27 +248,65 @@ class XsecNavigator:
                     self.radius_wheel[0] = radius + sign * WHEEL_DISTANCE / 2
                     self.radius_wheel[1] = radius - sign * WHEEL_DISTANCE / 2
                     end_distance = [distance * self.radius_wheel[0], distance * self.radius_wheel[1]] #distance from rad to m
-                    wheel_cmd.vel_left = FIXED_SPEED * (1 + sign * (WHEEL_DISTANCE / (2 * radius)))
-                    wheel_cmd.vel_right = FIXED_SPEED * (1 - sign * (WHEEL_DISTANCE / (2 * radius)))
+                    wheel_cmd.v = FIXED_SPEED
+                    wheel_cmd.omega = FIXED_SPEED/radius 
                     
-
-                #check if final position is reached for left and right
-                if np.abs(self.current_distance[0]) > np.abs(end_distance[0]) or np.abs(self.current_distance[1]) > np.abs(end_distance[1]):
-                    wheel_cmd.vel_left = 0
-                    wheel_cmd.vel_right = 0
-
+                    
+                       
+                #--fineadjustment
+                #check if goal reached
+                if (self.flag_l or self.flag_r):
+                    wheel_cmd.v = 0
+                    wheel_cmd.omega = 0
+                    wheel_adj.vel_right = 0
+                    wheel_adj.vel_left = 0
+                    rospy.sleep(0.1)
                     #reinit
                     self.current_distance = [0, 0]
-                    self.goal_distance = [0, 0]
-                    self.counter = 0
-                    self.init_tick = ticks
-                    self.current_command_index += 1 
-                    self.flag_goal_l = False
-                    self.flag_goal_r = False
-                else:
-                    self.counter += 1
-
-            return wheel_cmd
+                    self.flag_done = True
+                    self.flag_r = False 
+                    self.flag_l = False
+                    self.fine_adjust = False
+                    self.current_command_index += 1
+                    
+                  
+                #check if final position is reached for left wheel
+                elif np.abs(self.current_distance[0]) > np.abs(end_distance[0]):
+                    self.fine_adjust = True
+                    rospy.loginfo(f"{end_distance} , {self.current_distance}")
+                    rospy.loginfo(f"current ticks, left reached: {self.current_ticks}")
+                    wheel_cmd.v = 0
+                    wheel_cmd.omega = 0
+                    #tick difference
+                    tickdiff_l = np.abs(self.current_ticks[0]) - np.abs(self.current_ticks[1])
+                    #check if wheels reached similar distance
+                    if np.abs(tickdiff_l) < 10: 
+                        self.flag_l = True
+                    elif tickdiff_l > 0:
+                        wheel_adj.vel_right = 2* FIXED_SPEED
+                    elif tickdiff_l < 0:
+                        rospy.loginfo(f"should not be here left {tickdiff_l}")
+                        wheel_adj.vel_right = - 2* FIXED_SPEED
+                 
+                #check if final position is reached for right wheel        
+                elif np.abs(self.current_distance[1]) > np.abs(end_distance[1]):
+                    self.fine_adjust = True
+                    rospy.loginfo(f"{end_distance} , {self.current_distance}")
+                    rospy.loginfo(f"current ticks, right reached: {self.current_ticks}")
+                    wheel_cmd.v = 0
+                    wheel_cmd.omega = 0
+                    #tick difference
+                    tickdiff_r = np.abs(self.current_ticks[1]) - np.abs(self.current_ticks[0])
+                    #check if wheels reached similar distance
+                    if np.abs(tickdiff_r) < 10:
+                        self.flag_r = True
+                    elif tickdiff_r > 0:
+                        wheel_adj.vel_left = 2 * FIXED_SPEED
+                    elif tickdiff_r < 0:
+                        rospy.loginfo(f"should not be here right{tickdiff_r}")
+                        wheel_adj.vel_left = - 2 * FIXED_SPEED
+                
+            return wheel_cmd, wheel_adj, self.fine_adjust
         
         
         ################################

@@ -1,6 +1,7 @@
 pub: # Published topics
   #-- xsec_nav
-  wheels_cmd: /wheels_driver_node/wheels_cmd # add vehicle name
+  wheels_cmd: /car_cmd_switch_node/cmd # add vehicle name
+  wheels_adj: /wheels_driver_node/wheels_cmd # add vehicle name
   flag: /quack_man/x_sec_navigating
   
   #-- xsec_det

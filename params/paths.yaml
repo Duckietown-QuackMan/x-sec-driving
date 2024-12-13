@@ -5,4 +5,4 @@ right:
   distance: 0.1  # distance before turn
 
 left:   
-  distance: 0.4  # distance before turn
+  distance: 0.35  # distance before turn

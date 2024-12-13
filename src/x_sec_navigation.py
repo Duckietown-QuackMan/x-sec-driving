@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 import sys
 print(sys.path)
 
-from duckietown_msgs.msg import WheelsCmdStamped, WheelEncoderStamped
+from duckietown_msgs.msg import WheelsCmdStamped, WheelEncoderStamped, Twist2DStamped
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion 
 from std_msgs.msg import Bool
 from enums import Path
@@ -34,7 +34,7 @@ class XsecNavigation:
     def __init__(self):
 
         # set update rate
-        self.update_rate = 50 #Hz
+        self.update_rate = 20 #Hz
         self.rate = rospy.Rate(self.update_rate)
 
         self.received_first_pose_msg = False
@@ -93,6 +93,7 @@ class XsecNavigation:
         #--pub
         self.name_pub_flag_topic = get_rosparam("~topics/pub/flag")
         self.name_pub_wheel_cmd_topic = self.vehicle_name + get_rosparam("~topics/pub/wheels_cmd")
+        self.name_pub_wheel_adj_topic = self.vehicle_name + get_rosparam("~topics/pub/wheels_adj")
         
         #path params
         self.move_straight_params = get_rosparam("~paths/straight")
@@ -108,14 +109,14 @@ class XsecNavigation:
             self.name_sub_tick_l_topic,
             WheelEncoderStamped,
             self.tick_l_callback,
-            queue_size=10,
+            queue_size=1,
         )
         
         self.sub_ticks_r = rospy.Subscriber(
             self.name_sub_tick_r_topic,
             WheelEncoderStamped,
             self.tick_r_callback,
-            queue_size=10,
+            queue_size=1,
         )
         
         self.sub_flag = rospy.Subscriber(
@@ -127,6 +128,12 @@ class XsecNavigation:
         
         self.pub_wheel_cmd = rospy.Publisher(
             self.name_pub_wheel_cmd_topic,
+            Twist2DStamped,
+            queue_size=10,
+        )
+        
+        self.pub_wheel_adj = rospy.Publisher(
+            self.name_pub_wheel_adj_topic,
             WheelsCmdStamped,
             queue_size=10,
         )
@@ -144,7 +151,7 @@ class XsecNavigation:
         self.sub_ticks_r_msg = msg
         
     def xsec_navigation_callback(self, msg):
-        wheel_cmd = WheelsCmdStamped()
+        wheel_cmd = Twist2DStamped()
         
         self.setup_params()
         
@@ -159,6 +166,7 @@ class XsecNavigation:
             self.pub_flag.publish(True)
             #get next mission randomly
             path = random.randint(0,2)
+            path = 2
             if path == Path.STRAIGHT.value: 
                 rospy.loginfo("Move straight")
                 move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_straight.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
@@ -184,19 +192,27 @@ class XsecNavigation:
                         wheel_cmd = move.get_wheel_cmd_pose((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
                     elif WITH_TICKS:
                         # wheel vel control with encoder ticks feedback
-                        wheel_cmd = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
+                        wheel_cmd, wheel_adj, fine_adjust = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
                     else:
                         # calculate wheel cmd
                         wheel_cmd = move.get_wheel_cmd()
-                    self.pub_wheel_cmd.publish(wheel_cmd)
+                        
+                    if fine_adjust:
+                        self.pub_wheel_adj.publish(wheel_adj)
+                    else:
+                        self.pub_wheel_cmd.publish(wheel_cmd)
+                    
                     self.rate.sleep()
-                    #rospy.loginfo("Driving ", wheel_cmd.vel_left, wheel_cmd.vel_right)
+                    #rospy.loginfo("Driving ", wheel_cmd.v, wheel_cmd.omega)
             
             #switch to lane following
             self.pub_flag.publish(False)
-            wheel_cmd.vel_left = 0
-            wheel_cmd.vel_right = 0
+            wheel_cmd.v = 0
+            wheel_cmd.omega = 0
+            wheel_adj.vel_left = 0
+            wheel_adj.vel_right = 0
             self.pub_wheel_cmd.publish(wheel_cmd)
+            self.pub_wheel_adj.publish(wheel_adj)
             
             #wait for state machine to set the flags
             self.name_sub_flag_topic == True
