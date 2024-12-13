@@ -221,6 +221,8 @@ class XsecNavigator:
                 direction = current_command.direction  
                 distance = current_command.distance
                 
+                
+                # --command driving 
                 if command_type == MotionCommand.Type.STRAIGHT:
                     end_distance = [distance, distance]
                     wheel_cmd.v = FIXED_SPEED

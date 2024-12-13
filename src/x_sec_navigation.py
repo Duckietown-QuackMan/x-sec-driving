@@ -166,7 +166,6 @@ class XsecNavigation:
             self.pub_flag.publish(True)
             #get next mission randomly
             path = random.randint(0,2)
-            path = 2
             if path == Path.STRAIGHT.value: 
                 rospy.loginfo("Move straight")
                 move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_straight.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
