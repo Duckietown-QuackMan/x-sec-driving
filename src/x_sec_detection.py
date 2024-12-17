@@ -26,7 +26,6 @@ class XsecDetection:
         self.evaluate = False
         self.det_start_time = None 
         self.received_first_input_msg_image = False
-        self.pixel_detect = True
         
         if CV_BRIDGE_AVAILABLE:
             self.cv_bridge = CvBridge()
@@ -55,7 +54,7 @@ class XsecDetection:
         """
         Setup the parameters for the node reading them from the ROS parameter server.
         - self.name_sub_image_input_topic: name of the 3-channels input image topic
-        - self.name_pub_image_red_lines_mask_topic: name of the 1-channel output mask for red lines
+        - self.name_pub_image_red_line_topic: name of the output img of the red line
         """
 
         def get_rosparam(name):
@@ -72,8 +71,7 @@ class XsecDetection:
 
         # topics params
         self.name_sub_image_input_topic = self.vehicle_name + get_rosparam("~topics/sub/camera")
-        self.name_pub_image_red_lines_mask_topic = self.vehicle_name + get_rosparam("~topics/pub/red_lines_mask")
-        self.name_pub_image_xsec_eval_topic = self.vehicle_name + get_rosparam("~topics/pub/xsec_eval")
+        self.name_pub_image_red_line_topic = self.vehicle_name + get_rosparam("~topics/pub/red_line")
         self.name_pub_bool_xsec_flag = get_rosparam("~topics/pub/xsec_flag")
 
     def setup_publishers_and_subscribers(self) -> None:
@@ -88,14 +86,8 @@ class XsecDetection:
             queue_size=1,
         )
 
-        self.pub_image_red_lines_mask = rospy.Publisher(
-            self.name_pub_image_red_lines_mask_topic,
-            CompressedImage,
-            queue_size=1,
-        )
-        
-        self.pub_image_red_xsec_eval = rospy.Publisher(
-            self.name_pub_image_xsec_eval_topic,
+        self.pub_image_red_line = rospy.Publisher(
+            self.name_pub_image_red_line_topic,
             CompressedImage,
             queue_size=1,
         )
@@ -106,7 +98,7 @@ class XsecDetection:
             queue_size=1,
         )
 
-    def publish_red_mask(
+    def publish_red_line(
         self,
         image: NDArray[np.uint8],
         input_msg_stamp: rospy.Time,
@@ -117,24 +109,24 @@ class XsecDetection:
         masks with the input image for the evaluation.
 
         Args:
-            red_lines_mask (NDArray[np.bool_]): 1-channel binary mask of the red lines
+            red_line: 1-channel compressed image the red line
             input_msg_stamp (rospy.Time): ROS timestamp of the input image
         """
 
         if CV_BRIDGE_AVAILABLE:
-            red_lines_mask_msg = self.cv_bridge.cv2_to_compressed_imgmsg(
+            red_line_msg = self.cv_bridge.cv2_to_compressed_imgmsg(
                 255 * image.astype(np.uint8), dst_format="png"
             )
         else:
-            red_lines_mask_msg = CompressedImage()
-            red_lines_mask_msg.format = "png"
-            ext_format = '.' + red_lines_mask_msg.format
-            red_lines_mask_msg.data = np.array(
+            red_line_msg = CompressedImage()
+            red_line_msg.format = "png"
+            ext_format = '.' + red_line_msg.format
+            red_line_msg.data = np.array(
                 cv2.imencode(ext_format, 255 * image.astype(np.uint8))[1]
             ).tobytes()
-        red_lines_mask_msg.header.stamp = input_msg_stamp
+        red_line_msg.header.stamp = input_msg_stamp
 
-        self.pub_image_red_lines_mask.publish(red_lines_mask_msg)
+        self.pub_image_red_line.publish(red_line_msg)
         
         
     def publish_xsec_flag(
@@ -173,7 +165,7 @@ class XsecDetection:
                 rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
                 #Publish eval image
                 input_msg_stamp = msg.header.stamp
-                self.publish_red_mask(img, input_msg_stamp)
+                self.publish_red_line(img, input_msg_stamp)
 
 if __name__ == "__main__":
     rospy.init_node("x_sec_detection", anonymous=True)
