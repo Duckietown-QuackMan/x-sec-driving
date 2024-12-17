@@ -227,8 +227,9 @@ class XsecNavigator:
                     end_distance = [distance, distance]
                     wheel_cmd.v = FIXED_SPEED
                     wheel_cmd.omega = 0
-                    rospy.loginfo(f"Straight")
-                    rospy.loginfo(f"{end_distance}, {self.current_distance}")
+                    if debug_print:
+                        rospy.loginfo(f"Straight")
+                        rospy.loginfo(f"{end_distance}, {self.current_distance}")
                     
                 
                 elif command_type == MotionCommand.Type.ROTATE:
@@ -259,7 +260,7 @@ class XsecNavigator:
                        
                 #--fineadjustment
                 #check if goal reached
-                if (self.flag_l and self.flag_r):
+                if (self.flag_l or self.flag_r):
                     wheel_cmd.v = 0
                     wheel_cmd.omega = 0
                     wheel_adj.vel_right = 0
@@ -599,14 +600,16 @@ class XsecNavigator:
                 distance = current_command.distance
                 
                 if command_type == MotionCommand.Type.STRAIGHT:
-                    rospy.loginfo("Straight")
+                    if debug_print:
+                        rospy.loginfo("Straight")
                     speed = FIXED_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_SPEED
                     wheel_cmd.vel_left, wheel_cmd.vel_right = speed, speed
                     
                     current_distance = time * speed
 
                 elif command_type == MotionCommand.Type.ROTATE:
-                    rospy.loginfo("Rotate")
+                    if debug_print:
+                        rospy.loginfo("Rotate")
                     # Rotate the robot, either clockwise or counterclockwise
                     angular_speed = FIXED_ROTATION_SPEED if direction == MotionCommand.Direction.POSITIVE else -FIXED_ROTATION_SPEED   # Example speed for rotation
                     wheel_cmd.vel_left, wheel_cmd.vel_right = -angular_speed, angular_speed
@@ -615,7 +618,8 @@ class XsecNavigator:
                     
                     
                 elif command_type == MotionCommand.Type.CURVE:
-                    rospy.loginfo("Curve")
+                    if debug_print:
+                        rospy.loginfo("Curve")
                     # Move in a curve with a specified radius
                     radius = current_command.radius 
                     sign = 1 if direction == MotionCommand.Direction.POSITIVE else -1
@@ -667,7 +671,8 @@ class XsecNavigator:
             #Get current distances
             self.distance_current = np.sqrt((np.abs(cur_pose.position.x) - np.abs(self.initial_pose.position.x))**2 + (np.abs(cur_pose.position.y) - np.abs(self.initial_pose.position.y))**2)
             current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
-            rospy.loginfo("Going Straight: current ", self.distance_current, " speed ", speed, ", yaw ", current_yaw)
+            if debug_print:
+                rospy.loginfo("Going Straight: current ", self.distance_current, " speed ", speed, ", yaw ", current_yaw)
             
             return speed, speed     
         
@@ -678,7 +683,8 @@ class XsecNavigator:
             # Convert quaternion to Euler angles (roll, pitch, yaw)
             current_yaw = tf.euler_from_quaternion([cur_pose.orientation.x, cur_pose.orientation.y, cur_pose.orientation.z, cur_pose.orientation.w])[2]
             self.distance_current = np.abs(self.initial_yaw - current_yaw) + TOL_ROTATE
-            rospy.loginfo("Rotate: current ", self.distance_current, " speed ", angular_speed, ", yaw ", current_yaw )
+            if debug_print:
+                rospy.loginfo("Rotate: current ", self.distance_current, " speed ", angular_speed, ", yaw ", current_yaw )
 
             return -angular_speed, angular_speed
         

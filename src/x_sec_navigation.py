@@ -151,10 +151,7 @@ class XsecNavigation:
         self.sub_ticks_r_msg = msg
         
     def xsec_navigation_callback(self, msg):
-        wheel_cmd = Twist2DStamped()
-        
-        # self.setup_params()
-        
+        wheel_cmd = Twist2DStamped()        
         
         while not self.sub_ticks_r and not self.sub_ticks_r:
             rospy.loginfo(f"Waiting to receive messages from the topics {self.name_sub_tick_l_topic} and {self.name_sub_tick_r_topic}")
@@ -203,7 +200,7 @@ class XsecNavigation:
                     
                     self.rate.sleep()
                     #rospy.loginfo("Driving ", wheel_cmd.v, wheel_cmd.omega)
-            
+            # stop the bot's navigation commands
             #switch to lane following
             self.pub_flag.publish(False)
             wheel_cmd.v = 0
@@ -212,10 +209,12 @@ class XsecNavigation:
             wheel_adj.vel_right = 0
             self.pub_wheel_cmd.publish(wheel_cmd)
             self.pub_wheel_adj.publish(wheel_adj)
-            
-            #wait for state machine to set the flags
-            self.name_sub_flag_topic == True
             rospy.sleep(2)
+
+            
+            # rospy.sleep(3)
+            #wait for state machine to set the flags
+            # self.name_sub_flag_topic == True
             
         else: 
             # rospy.loginfo("... wait for xsec GO-command ...")
