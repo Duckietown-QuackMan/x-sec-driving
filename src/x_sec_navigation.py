@@ -10,7 +10,6 @@ import sys
 print(sys.path)
 
 from duckietown_msgs.msg import WheelsCmdStamped, WheelEncoderStamped, Twist2DStamped
-from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion 
 from std_msgs.msg import Bool
 from enums import Path
 from XsecNavigation import XsecNavigator
@@ -24,10 +23,6 @@ except ModuleNotFoundError:
     CV_BRIDGE_AVAILABLE = False
 
 from std_msgs.msg import Bool 
-
-WITH_FEEDBACK = 0
-WITH_TICKS = 1
-WITH_TRAJ = 0
 
 class XsecNavigation:
     
@@ -104,54 +99,61 @@ class XsecNavigation:
         """
         Setup the ROS publishers and subscribers for the node.
         """
-
+        #left ticks
         self.sub_ticks_l = rospy.Subscriber(
             self.name_sub_tick_l_topic,
             WheelEncoderStamped,
             self.tick_l_callback,
             queue_size=1,
         )
-        
+        #right ticks
         self.sub_ticks_r = rospy.Subscriber(
             self.name_sub_tick_r_topic,
             WheelEncoderStamped,
             self.tick_r_callback,
             queue_size=1,
         )
-        
+        #xsection navigation start flag
         self.sub_flag = rospy.Subscriber(
             self.name_sub_flag_topic,
             Bool,
             self.xsec_navigation_callback,
             queue_size=1,
         )
-        
+        #wheel command topic (setting velocity and angular velocity)
         self.pub_wheel_cmd = rospy.Publisher(
             self.name_pub_wheel_cmd_topic,
             Twist2DStamped,
             queue_size=10,
         )
-        
+        #wheel command topic (setting left and right wheel motor speed)
         self.pub_wheel_adj = rospy.Publisher(
             self.name_pub_wheel_adj_topic,
             WheelsCmdStamped,
             queue_size=10,
         )
-        
+        #xsection navigation state flag
         self.pub_flag = rospy.Publisher(
             self.name_pub_flag_topic,
             Bool,
             queue_size = 10
         )
-        
+    #left ticks callback  
     def tick_l_callback(self, msg):
         self.sub_ticks_l_msg = msg
-        
+    #right ticks callback
     def tick_r_callback(self, msg):
         self.sub_ticks_r_msg = msg
         
     def xsec_navigation_callback(self, msg):
-        wheel_cmd = Twist2DStamped()        
+        """xsection navigation callback fct
+        Publishes the state of the navigation to the state machine. 
+        Args:
+            msg (Bool): Sets if ghostbot should switch into xsection navigation.
+            
+        """
+        wheel_cmd = Twist2DStamped() 
+        wheel_adj = WheelsCmdStamped()       
         
         while not self.sub_ticks_r and not self.sub_ticks_r:
             rospy.loginfo(f"Waiting to receive messages from the topics {self.name_sub_tick_l_topic} and {self.name_sub_tick_r_topic}")
@@ -163,6 +165,7 @@ class XsecNavigation:
             self.pub_flag.publish(True)
             #get next mission randomly
             path = random.randint(0,2)
+            #create mission commands
             if path == Path.STRAIGHT.value: 
                 rospy.loginfo("Move straight")
                 move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_straight.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
@@ -177,29 +180,24 @@ class XsecNavigation:
                 rospy.loginfo("Error: Invalid mission. Please enter a valid number.", file=sys.stderr)
                 sys.exit(1)  # Exit with a non-zero code indicating an error
                 
-            # choose controller tipe
-            if WITH_TRAJ:
-                # wheel vel control with predefined trajectory (work in progress)
-                self.traj_controller(move, self.x_sec_navigator.trajectories[path])
-            else:
-                while not move.all_commands_excecuted:
-                    if WITH_FEEDBACK:
-                        # wheel vel control with bot pose feedback - not applicable for quackman game
-                        wheel_cmd = move.get_wheel_cmd_pose((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
-                    elif WITH_TICKS:
-                        # wheel vel control with encoder ticks feedback
-                        wheel_cmd, wheel_adj, fine_adjust = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
-                    else:
-                        # calculate wheel cmd
-                        wheel_cmd = move.get_wheel_cmd()
-                        
-                    if fine_adjust:
-                        self.pub_wheel_adj.publish(wheel_adj)
-                    else:
-                        self.pub_wheel_cmd.publish(wheel_cmd)
+            while not move.all_commands_excecuted:
+                if WITH_FEEDBACK:
+                    # wheel vel control with bot pose feedback - not applicable for quackman game
+                    wheel_cmd = move.get_wheel_cmd_pose((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
+                elif WITH_TICKS:
+                    # wheel vel control with encoder ticks feedback
+                    wheel_cmd, wheel_adj, fine_adjust = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
+                else:
+                    # calculate wheel cmd
+                    wheel_cmd = move.get_wheel_cmd()
                     
-                    self.rate.sleep()
-                    #rospy.loginfo("Driving ", wheel_cmd.v, wheel_cmd.omega)
+                if fine_adjust:
+                    self.pub_wheel_adj.publish(wheel_adj)
+                else:
+                    self.pub_wheel_cmd.publish(wheel_cmd)
+                
+                self.rate.sleep()
+                
             # stop the bot's navigation commands
             #switch to lane following
             self.pub_flag.publish(False)
@@ -209,42 +207,15 @@ class XsecNavigation:
             wheel_adj.vel_right = 0
             self.pub_wheel_cmd.publish(wheel_cmd)
             self.pub_wheel_adj.publish(wheel_adj)
+            #wait before entering back to x-section detection
             rospy.sleep(2)
-
-            
-            # rospy.sleep(3)
-            #wait for state machine to set the flags
-            # self.name_sub_flag_topic == True
             
         else: 
-            # rospy.loginfo("... wait for xsec GO-command ...")
-            
             rospy.sleep(0.5)
-            # self.cnt += 1
-            
-            
-    def traj_controller(self, move, trajectory): 
-        """ 
-        control wheel vel through predefined trajectory points
-        "work in progress"
-        
-        """
-        pos_tol = 0.01
-        current_coord = np.array([0,0])
-        
-        for idx, coord in enumerate(trajectory):
-            
-            end_coord = np.array(coord)
-            while np.linalg.norm(current_coord, end_coord) >= pos_tol: 
-                wheel_cmd, current_coord = move.get_wheel_cmd_traj((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), current_coord, end_coord) 
-                self.pub_wheel_cmd.publish(wheel_cmd)
-                self.rate.sleep()
-            
-                
-            
+              
 if __name__ == "__main__":
     rospy.init_node("x_sec_detection", anonymous=True)
-
+    #build xsec navigation librabry
     xsec_navigation = XsecNavigation()
     xsec_navigation.print_info()
 

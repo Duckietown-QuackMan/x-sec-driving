@@ -17,19 +17,7 @@ from std_msgs.msg import Bool
 
 from XsecDetector import (
     redline_detection,
-    line_detection,
-    plot_lines,
-    XSecTile,
-    evaluate
     )
-
-from threading import Lock
-
-mutex = Lock()
-
-
-
-
 
 class XsecDetection:
 
@@ -118,32 +106,9 @@ class XsecDetection:
             queue_size=1,
         )
 
-    def validate_mask_shapes(
+    def publish_red_mask(
         self,
-        input_image: NDArray[np.uint8],
-        red_lines_mask: NDArray[np.bool_],
-    ) -> None:
-        """
-        Validate the shapes of the red line masks.
-
-        Args:
-            input_image (NDArray[np.uint8]): 3-channels input image
-            red_lines_mask (NDArray[np.bool_]): 1-channel binary mask of the red lines
-        """
-        assert (
-            len(red_lines_mask.shape) == 2
-            and red_lines_mask.shape == input_image.shape[:2]
-            and red_lines_mask.dtype == bool
-        ), (
-            "The red lines mask should be a 2D numpy binary array"
-            f" with the same height and width {input_image.shape[:2]}"
-            f" as the input image, got shape={red_lines_mask.shape}"
-            f" and dtype={red_lines_mask.dtype} instead."
-        )
-
-    def publish_line_masks(
-        self,
-        image: NDArray[np.uint8], #np.red_lines_mask: NDArray[np.bool_],
+        image: NDArray[np.uint8],
         input_msg_stamp: rospy.Time,
     ) -> None:
         """
@@ -171,31 +136,6 @@ class XsecDetection:
 
         self.pub_image_red_lines_mask.publish(red_lines_mask_msg)
         
-    def publish_xsec_eval(
-        self,
-        image: NDArray[np.uint8], #np.red_lines_mask: NDArray[np.bool_],
-        input_msg_stamp: rospy.Time,
-    ) -> None:
-        """
-
-        Args:
-            evalutation (NDArray[np.bool_])
-        """
-
-        if CV_BRIDGE_AVAILABLE:
-            xsec_eval_msg = self.cv_bridge.cv2_to_compressed_imgmsg(
-                255 * image.astype(np.uint8), dst_format="png"
-            )
-        else:
-            xsec_eval_msg = CompressedImage()
-            xsec_eval_msg.format = "png"
-            ext_format = '.' + xsec_eval_msg.format
-            xsec_eval_msg.data = np.array(
-                cv2.imencode(ext_format, 255 * image.astype(np.uint8))[1]
-            ).tobytes()
-        xsec_eval_msg.header.stamp = input_msg_stamp
-
-        self.pub_image_red_xsec_eval.publish(xsec_eval_msg)
         
     def publish_xsec_flag(
         self,
@@ -206,10 +146,9 @@ class XsecDetection:
         
 
     def xsec_detection_callback(self, msg: CompressedImage) -> None:
-        """
-        Callback for the input image subscriber.
-        Detect the red lines in the input image,
-        and publish the masks of the lines.
+        """Callback for the input image subscriber.
+        Detects red lines in the input image,
+        and publish a detection flag.
 
         Args:
             msg (CompressedImage): input image message
@@ -224,59 +163,21 @@ class XsecDetection:
             else:
                 self.det_start_time = rospy.Time.now()
             
+            #Detect redlines in town through pixel count
+            img = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
+            x_sec_flag, img = redline_detection(img)
+            self.publish_xsec_flag(x_sec_flag)
             
-            if self.pixel_detect:
-                """
-                Detect redlines in town through pixel count
-                """
-                img = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
-                x_sec_flag, img = redline_detection(img)
-                self.publish_xsec_flag(x_sec_flag)
-                
-                # Debug 
-                if self.evaluate:
-                    rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
-                    #Publish eval image
-                    input_msg_stamp = msg.header.stamp
-                    self.publish_line_masks(img, input_msg_stamp)
-
-
-            else:
-                """
-                Detect redlines over intersection of detected polygons
-                """
+            # Debug 
+            if self.evaluate:
+                rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
+                #Publish eval image
                 input_msg_stamp = msg.header.stamp
-                input_bgr_image = cv2.imdecode(
-                    np.ndarray(shape=(1, len(msg.data)), dtype=np.uint8, buffer=msg.data),
-                    cv2.IMREAD_UNCHANGED,
-                )
-
-                lines_mask, lines, projected_lines, cropped_image = line_detection(input_bgr_image)
-                four_way_x_sec = XSecTile()
-                score, eval, x_sec_flag = evaluate(four_way_x_sec, projected_lines, self.evaluate)
-                self.publish_xsec_flag(x_sec_flag)
-                if x_sec_flag:
-                    rospy.loginfo(f"image timestampe: {input_msg_stamp.to_sec()}")
-                    rospy.loginfo(f"score: {score}")
-
-                
-                if x_sec_flag:
-                    self.cnt = 0
-                
-                if self.evaluate: 
-                    #plot lines on image
-                    cropped_image_w_lines = plot_lines(cropped_image, lines, (0,0,255))
-                    #publish
-                    self.publish_line_masks(cropped_image_w_lines, input_msg_stamp)
-                    self.publish_xsec_eval(eval, input_msg_stamp)
-            
-        
-            
-
+                self.publish_red_mask(img, input_msg_stamp)
 
 if __name__ == "__main__":
     rospy.init_node("x_sec_detection", anonymous=True)
-
+    #build xsection detection library
     xsec_detection = XsecDetection()
     xsec_detection.print_info()
 
