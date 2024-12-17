@@ -5,7 +5,7 @@ pub: # Published topics
   flag: /quack_man/x_sec_navigating
   
   #-- xsec_det
-  red_line: /xsec_detection/red_line/compressed # add vehicle name
+  red_line: /xsec_detection/red_line # add vehicle name
   xsec_flag: /quack_man/x_sec
 
 sub: # Subscribed topics
