@@ -259,7 +259,7 @@ class XsecNavigator:
                        
                 #--fineadjustment
                 #check if goal reached
-                if (self.flag_l or self.flag_r):
+                if (self.flag_l and self.flag_r):
                     wheel_cmd.v = 0
                     wheel_cmd.omega = 0
                     wheel_adj.vel_right = 0
