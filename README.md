@@ -87,7 +87,9 @@ During navigation driving the `x_sec_navigation` flag is set to true until the m
 graph TD
   encoded_ticks --> current_distance
   ref_distance --> minus((minus))
-  current_distance --> minus((minus)) --> Controller --> wheel_velocity --> Duckiebot --> encoded_ticks 
-  wheel_velocity --> factor((*))
+  current_distance --> minus((minus)) --> Controller --> Duckiebot --> encoded_ticks
+  Duckiebot --> simulated wheel_velocity --> factor((*))
   time --> factor((x)) --> ref_distance
 ```
+
+
