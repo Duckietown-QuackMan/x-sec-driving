@@ -88,7 +88,7 @@ graph TD
   encoded_ticks --> current_distance
   ref_distance --> minus((minus))
   current_distance --> minus((minus)) --> Controller --> Duckiebot --> encoded_ticks
-  Duckiebot --> simulated wheel_velocity --> factor((*))
+  Duckiebot --> simulated_wheel_velocity --> factor((*))
   time --> factor((x)) --> ref_distance
 ```
 
