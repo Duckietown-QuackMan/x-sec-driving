@@ -8,7 +8,8 @@ import numpy as np
 #init params
 WHEEL_DISTANCE = 0.102 #102
 WHEEL_RADIUS = 0.035
-FIXED_SPEED = 0.2 #m/s   
+FIXED_SPEED = 0.2 #m/s 
+FIXED_ANGULAR_SPEED = 0.2 #m/s   
 BOT_CORRECTION = 0.7  #gimpy
 ADJUSTMENT_TOL = 10
 

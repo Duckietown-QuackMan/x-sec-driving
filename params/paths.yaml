@@ -2,7 +2,7 @@ straight:
   distance: 0.5  # distance to marking + distance of tile
 right:   
   distance_before: 0.25  # distance before turn
-  ditance_after: 0.1    # distance after turn
+  distance_after: 0.1    # distance after turn
 left:   
   distance_before: 0.5  # distance before turn
-  ditance_after: 0.35   # distance after turn
+  distance_after: 0.35   # distance after turn
