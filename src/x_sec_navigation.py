@@ -168,28 +168,21 @@ class XsecNavigation:
             #create mission commands
             if path == Path.STRAIGHT.value: 
                 rospy.loginfo("Move straight")
-                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_straight.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
+                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_straight.commands, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             elif path == Path.RIGHT.value: 
                 rospy.loginfo("Move right")
-                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_right.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
+                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_right.commands, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             elif path == Path.LEFT.value:
                 rospy.loginfo("Move left")
-                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_left.commands, update_rate=self.update_rate, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
+                move = self.x_sec_navigator.Move(commands=self.x_sec_navigator.move_left.commands, init_ticks=(self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data), resolution=self.sub_ticks_r_msg.resolution)
             else:
                 # Print an error message if conversion fails
                 rospy.loginfo("Error: Invalid mission. Please enter a valid number.", file=sys.stderr)
                 sys.exit(1)  # Exit with a non-zero code indicating an error
                 
             while not move.all_commands_excecuted:
-                if WITH_FEEDBACK:
-                    # wheel vel control with bot pose feedback - not applicable for quackman game
-                    wheel_cmd = move.get_wheel_cmd_pose((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
-                elif WITH_TICKS:
-                    # wheel vel control with encoder ticks feedback
-                    wheel_cmd, wheel_adj, fine_adjust = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
-                else:
-                    # calculate wheel cmd
-                    wheel_cmd = move.get_wheel_cmd()
+                # wheel vel control with encoder ticks feedback
+                wheel_cmd, wheel_adj, fine_adjust = move.get_wheel_cmd_ticks((self.sub_ticks_l_msg.data, self.sub_ticks_r_msg.data))
                     
                 if fine_adjust:
                     self.pub_wheel_adj.publish(wheel_adj)
