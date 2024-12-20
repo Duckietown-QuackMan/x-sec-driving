@@ -63,6 +63,9 @@ class DistanceType(Enum):
     
     
 class Command:
+    """ 
+    Command defining parameters of a subpath.
+    """
     
     def __init__(self, 
     type: MotionCommand.Type = MotionCommand.Type.STRAIGHT,
